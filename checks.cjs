@@ -21,13 +21,13 @@ function element() {
     fire(name, values = {}) { for (const handler of this.listeners[name] ?? []) { handler({ preventDefault: noop, ...values }); } }
   };
 }
-const nodes = Object.fromEntries(['world', 'error', 'joystick', 'stick', 'reset', 'camera', 'speed', 'distance', 'tip'].map(id => [id, element()]));
+const nodes = Object.fromEntries(['world', 'error', 'joystick', 'stick', 'reset', 'camera', 'speed', 'distance', 'tip', 'game-state', 'death-panel', 'respawn'].map(id => [id, element()]));
 nodes.world.getContext = () => gl;
-const buttons = ['brake', 'back', 'forward'].map(key => { const button = element(); button.dataset.key = key; return button; });
+const buttons = ['brake', 'back', 'forward', 'jump'].map(key => { const button = element(); button.dataset.key = key; return button; });
 const window = element();
 const document = { ...element(), getElementById: id => nodes[id], querySelectorAll: selector => selector === '[data-key]' ? buttons : buttons.filter(b => b.classList.contains('held')) };
 let nextFrame;
-const context = vm.createContext({ console, document, innerWidth: 390, innerHeight: 844, devicePixelRatio: 1, addEventListener: window.addEventListener.bind(window), requestAnimationFrame: callback => { nextFrame = callback; } });
+const context = vm.createContext({ console, document, CrabPhysics:require('./dist/physics.js'), innerWidth: 390, innerHeight: 844, devicePixelRatio: 1, addEventListener: window.addEventListener.bind(window), requestAnimationFrame: callback => { nextFrame = callback; } });
 vm.runInContext(source + '\nglobalThis.inspectInputs = () => ({velocity, distance, joystickAxis, zoom, buttons:touchKeys.size, pointers:cameraPointers.size, keys:keys.size});', context);
 let now = 0;
 const advance = count => { for (let i = 0; i < count; i++) { nextFrame(now); now += 1000 / 60; } };
@@ -55,4 +55,16 @@ assert.equal(context.inspectInputs().keys, 0, '切换页面必须松开键盘');
 nodes.reset.onclick();
 assert.equal(context.inspectInputs().distance, 0);
 assert.equal(context.inspectInputs().velocity, 0);
-console.log('PASS: simultaneous steering + throttle, release/cancel, pinch, focus loss and reset');
+window.fire('keydown', { code:'Space', repeat:false });
+advance(10);
+assert(Number(nodes.world.dataset.height) > .3, '空格必须跳跃，而非刹车');
+window.fire('keydown', { code:'Space', repeat:true });
+advance(100);
+assert.equal(Number(nodes.world.dataset.height), 0, '按住空格不应自动重复跳跃');
+buttons[3].fire('pointerdown', { pointerId:6 });
+advance(10);
+assert(Number(nodes.world.dataset.height) > .3, '手机跳跃按钮必须生效');
+buttons[3].fire('pointerup', { pointerId:6 });
+nodes.respawn.onclick();
+assert.equal(context.inspectInputs().distance, 0);
+console.log('PASS: simultaneous steering + throttle, release/cancel, pinch, focus loss, keyboard/touch jump and reset');

@@ -1,0 +1,36 @@
+const assert=require('node:assert/strict');
+const P=require('./dist/physics.js');
+function advance(state,frames,input={}){for(let i=0;i<frames;i++){P.step(state,input,1/120);}}
+let s=P.createState();
+assert(P.jump(s));assert(!P.jump(s),'禁止二段跳');
+let highest=0;for(let i=0;i<180;i++){P.step(s,{},1/120);highest=Math.max(highest,s.y);}
+assert(highest>1.1&&highest<1.4);assert.equal(s.y,0);assert.equal(s.vy,0);
+assert(P.jump(s),'落地后可再次跳跃');
+
+// 左侧树干位于 (-4.6,10)，车头与树干之间必须留出碰撞间距。
+s={...P.createState(),x:-4.6,z:5,speed:9};
+advance(s,180,{throttle:1});
+assert(s.z<=7.902,`车头穿树：z=${s.z}`);assert.equal(s.hitKind,'tree');
+assert.equal(s.mode,'riding');
+
+// 房屋占据 x=[11.5,14.5], z=[6.5,9.5]，分别测试正面、侧面和倒车。
+s={...P.createState(),x:13,z:2,speed:9};
+advance(s,240,{throttle:1});assert(s.z<=4.652,`车头穿墙：z=${s.z}`);assert.equal(s.hitKind,'wall');
+s={...P.createState(),x:8,z:8,heading:Math.PI/2,speed:9};
+for(let i=0;i<30;i++){P.step(s,{throttle:1},.1);}
+assert(s.x<=9.652,`高速侧面穿墙：x=${s.x}`);
+s={...P.createState(),x:13,z:14,speed:-3};
+advance(s,300,{throttle:-1});assert(s.z>=11.348,`倒车穿墙：z=${s.z}`);
+s={...P.createState(),x:13,z:4.4,speed:9,y:1,vy:1};
+P.step(s,{throttle:1},.1);assert(s.z<=4.652,'跳跃不应穿越高墙');
+
+s={...P.createState(),x:-4.3,heading:-Math.PI/2,speed:8};
+advance(s,30,{throttle:1});assert.equal(s.mode,'drowning');
+const deathPosition=[s.x,s.z];advance(s,400,{throttle:1,turn:1});
+assert.equal(s.mode,'dead');assert.deepEqual([s.x,s.z],deathPosition);assert(!P.jump(s));
+s={...P.createState(),x:-7,y:1,vy:0};
+P.step(s,{},1/120);assert.equal(s.mode,'riding','腾空时不能立即落海死亡');
+advance(s,100);assert.equal(s.mode,'drowning','落到水面后必须触发落海');
+s={...P.createState(),x:-5.7};P.step(s,{},1/120);assert.equal(s.mode,'riding','安全岸边不误判');
+assert(P.obstacles(-100).some(o=>o.kind==='tree'),'反向骑行仍要生成碰撞体');
+console.log('PASS: jump/landing, no double jump, tree/front/side/reverse/airborne wall collisions, water/death and shore boundary');

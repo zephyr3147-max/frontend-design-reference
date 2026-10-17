@@ -28,18 +28,29 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none}
   .tip{top:calc(98px + env(safe-area-inset-top));left:18px;font-size:11px;max-width:240px}
 }
 @media(max-height:470px){.title h1{font-size:18px}.title p,.tip{display:none}.actions{flex-direction:row}.hud{bottom:calc(153px + env(safe-area-inset-bottom))}.speed{font-size:27px}.joystick{width:92px;height:92px;bottom:34px}.pedals{bottom:45px}}
+.jump-control{position:absolute;right:25px;bottom:185px;width:70px;height:56px;padding:0;white-space:nowrap;background:#e87559;color:white;font-size:14px;font-weight:700}
+.joystick-label{display:none}
+.game-state{position:absolute;left:30px;top:142px;max-width:270px;font-size:13px;background:#ffffefde;padding:8px 13px;border-radius:14px;pointer-events:none}
+.game-state:empty{display:none}.death-panel{position:absolute;inset:0;display:grid;place-items:center;background:#16494e24}.death-panel[hidden]{display:none}
+.death-card{text-align:center;max-width:300px;margin:20px;padding:25px 28px;background:#fff9e9ef;border-radius:25px;box-shadow:0 15px 55px #16494e24}.death-card h2{margin:0 0 12px;font-size:27px}.death-card p{font-size:14px;line-height:1.8;margin:0 0 18px}.death-card button{background:#e87559;color:white;font-weight:700;padding:12px 24px}
+@media(pointer:coarse),(max-width:650px){.jump-control{right:max(16px,env(safe-area-inset-right));bottom:calc(130px + env(safe-area-inset-bottom));width:60px;height:52px;padding:0}.game-state{left:18px;top:calc(134px + env(safe-area-inset-top));font-size:12px}.mobile-help{font-size:9px}}
+@media(max-height:470px){.jump-control{bottom:118px}.game-state{top:58px;left:18px}}
 </style>
 </head>
 <body>
-<canvas id="world" tabindex="0" aria-label="可操控的三维螃蟹骑自行车场景。W前进，S后退，A和D转向，空格刹车，拖动画面调整视角。"></canvas>
+<canvas id="world" tabindex="0" aria-label="可操控的三维螃蟹骑自行车场景。W前进，S后退，A和D转向，空格跳跃，Shift刹车，拖动画面调整视角。"></canvas>
 <header class="title"><h1>螃蟹的海岸骑行</h1><p>把海风装进口袋，骑到前面去。</p></header>
 <div class="actions"><button id="camera">视角复位</button><button id="reset">重新出发</button></div>
 <div class="tip" id="tip">按住「前进」，同时拨动左侧摇杆转向</div>
 <div class="hud"><div class="speed"><span id="speed">0</span><small>km/h</small></div><div class="distance">已骑行 <span id="distance">0</span> 米</div></div>
-<div class="help"><span class="keyboard-help">W / S 前进与后退　A / D 转向　空格刹车<br>拖动环绕视角 · 滚轮缩放 · R 重新出发</span><span class="mobile-help">左侧转向 · 右侧骑行 · 拖动看四周 · 双指缩放</span></div>
+<div class="help"><span class="keyboard-help">W / S 前进与后退　A / D 转向　空格跳跃　Shift 刹车<br>拖动环绕视角 · 滚轮缩放 · R 重新出发</span><span class="mobile-help">摇杆转向 · 按钮跳跃/骑行 · 拖动看四周 · 双指缩放</span></div>
 <div class="joystick" id="joystick" role="group" aria-label="转向摇杆，向左或向右拖动" tabindex="0"><span class="stick" id="stick">↔</span><span class="joystick-label">转向摇杆</span></div>
 <div class="touch pedals"><button data-key="brake">刹车</button><button data-key="back">后退</button><button data-key="forward">前进</button></div>
+<button class="jump-control" data-key="jump" aria-label="跳跃">跳跃 ↑</button>
+<div class="game-state" id="game-state" role="status" aria-live="polite"></div>
+<div class="death-panel" id="death-panel" hidden><section class="death-card" role="dialog" aria-label="落海后重新出发"><h2>螃蟹落海啦！</h2><p>咕噜咕噜……<br>自行车可不会游泳。回岸上再骑一次吧！</p><button id="respawn">回到岸上</button></section></div>
 <div class="badge">第三人称跟随视角</div><div id="error" role="alert"></div>
+<script src="physics.js"></script>
 <script>
 'use strict';
 const canvas=document.getElementById('world'), gl=canvas.getContext('webgl',{antialias:true,alpha:false});
@@ -75,22 +86,24 @@ function blob(root,pos,size,color,rotation=I()){drawMesh(sphere,mul(root,mul(T(.
 function box(root,pos,size,color,rotation=I()){drawMesh(cube,mul(root,mul(T(...pos),mul(rotation,S(...size)))),color);}
 function beam(root,a,b,r,color){const y=normalize(b.map((v,i)=>v-a[i])),x=normalize(cross(Math.abs(y[1])>.95?[1,0,0]:[0,1,0],y)),z=cross(x,y),length=Math.hypot(...b.map((v,i)=>v-a[i]));const m=[x[0]*r,x[1]*r,x[2]*r,0,y[0]*length,y[1]*length,y[2]*length,0,z[0]*r,z[1]*r,z[2]*r,0,(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,1];drawMesh(cylinder,mul(root,m),color);}
 let px=0,pz=0,heading=0,velocity=0,distance=0,phase=0,steer=0,orbit=.4,pitch=.37,zoom=8,elapsed=0,last=null;
+const ride=CrabPhysics.createState();
 let cameraPos=[-3,4,-8],cameraTarget=[0,1.3,0];
 const keys=new Set(),touchKeys=new Set(),buttonPointers=new Map(),cameraPointers=new Map();
 let lastPointer=[0,0],lastPinch=0,joystickPointer=null,joystickAxis=0;
 const joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
 const active=k=>keys.has(k)||touchKeys.has(k);
-const keyMap={KeyW:'forward',ArrowUp:'forward',KeyS:'back',ArrowDown:'back',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',Space:'brake'};
+const keyMap={KeyW:'forward',ArrowUp:'forward',KeyS:'back',ArrowDown:'back',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'brake',ShiftRight:'brake',KeyB:'brake'};
 function resetCamera(){orbit=.4;pitch=.37;zoom=8;}
-function reset(){release();px=0;pz=0;heading=0;velocity=0;distance=0;phase=0;steer=0;resetCamera();cameraPos=[-3,4,-8];cameraTarget=[0,1.3,0];}
-addEventListener('keydown',e=>{if(e.code==='KeyR'){reset();}if(keyMap[e.code]){e.preventDefault();keys.add(keyMap[e.code]);}});
+function reset(){Object.assign(ride,CrabPhysics.createState());release();px=0;pz=0;heading=0;velocity=0;distance=0;phase=0;steer=0;resetCamera();cameraPos=[-3,4,-8];cameraTarget=[0,1.3,0];}
+function requestJump(){CrabPhysics.jump(ride);}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat){requestJump();}return;}if(e.code==='KeyR'){reset();}if(keyMap[e.code]){e.preventDefault();keys.add(keyMap[e.code]);}});
 addEventListener('keyup',e=>{if(keyMap[e.code]){keys.delete(keyMap[e.code]);}});
 function resetJoystick(){joystickPointer=null;joystickAxis=0;stick.style.transform='translate(0,0)';}
 function release(){keys.clear();touchKeys.clear();buttonPointers.clear();cameraPointers.clear();resetJoystick();document.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));}
 addEventListener('blur',release);document.addEventListener('visibilitychange',()=>{if(document.hidden){release();last=null;}});
-document.getElementById('reset').onclick=reset;document.getElementById('camera').onclick=resetCamera;
+document.getElementById('reset').onclick=reset;document.getElementById('respawn').onclick=reset;document.getElementById('camera').onclick=resetCamera;
 for(const button of document.querySelectorAll('[data-key]')){
-  button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);buttonPointers.set(e.pointerId,button.dataset.key);touchKeys.add(button.dataset.key);button.classList.add('held');});
+  button.addEventListener('pointerdown',e=>{e.preventDefault();if(button.dataset.key==='jump'){requestJump();}button.setPointerCapture(e.pointerId);buttonPointers.set(e.pointerId,button.dataset.key);touchKeys.add(button.dataset.key);button.classList.add('held');});
   for(const event of ['pointerup','pointercancel','lostpointercapture']){button.addEventListener(event,e=>{buttonPointers.delete(e.pointerId);if(![...buttonPointers.values()].includes(button.dataset.key)){touchKeys.delete(button.dataset.key);button.classList.remove('held');}});}
 }
 function moveJoystick(e){
@@ -118,22 +131,27 @@ const base=I();
 function palm(x,z,h,seed){beam(base,[x,0,z],[x+.2,h,z],.15,[.57,.4,.24]);for(let i=0;i<6;i++){const a=i*Math.PI/3+seed;blob(base,[x+Math.sin(a)*.7,h-.05,z+Math.cos(a)*.7],[.28,.12,1.3],palette.green,mul(RY(a),RX(-.18)));}blob(base,[x+.2,h,z],[.35,.22,.35],palette.green);}
 function scenery(){
   box(base,[px,-.3,pz],[500,.3,500],palette.sand);
-  box(base,[-50,-.09,pz],[88,.12,500],palette.sea);
+  box(base,[-256,-.09,pz],[500,.12,500],palette.sea);
   box(base,[-6,.005,pz],[.5,.03,400],[.96,.97,.83]);
   box(base,[0,-.045,pz],[6,.13,400],palette.road);
   const start=Math.floor(pz/10)*10;
   for(let i=-12;i<=17;i++){const z=start+i*10;box(base,[0,.035,z],[.11,.025,3.2],[.86,.74,.5]);}
   const treeStart=Math.floor(pz/24);
-  for(let i=treeStart-4;i<=treeStart+6;i++){palm(7+Math.sin(i*4)*1.3,i*24,3.7+Math.cos(i)*.5,i);if(i%2===0){palm(-4.6,i*24+10,3.3,i*.7);}blob(base,[10,.2,i*24+8],[1.6,.6,1.8],[.56,.66,.39]);}
+  for(const object of CrabPhysics.obstacles(pz)){if(object.kind==='tree'){palm(object.x,object.z,object.trunkHeight,object.seed);}}
+  for(let i=treeStart-4;i<=treeStart+6;i++){blob(base,[10,.2,i*24+8],[1.6,.6,1.8],[.56,.66,.39]);}
   for(let i=-8;i<12;i++){const z=start+i*12;box(base,[-9+Math.sin(elapsed+i)*.25,-.006,z],[.08,.025,4.5],[.65,.87,.82]);}
-  for(let i=treeStart-2;i<=treeStart+4;i++){if(i%3===0){const z=i*24+8;box(base,[13,1,z],[3,2,3],[.9,.53,.36]);box(base,[13,2.25,z],[3.5,.22,3.5],palette.cream,RZ(.08));box(base,[12.2,1.2,z-1.51],[.6,.7,.03],palette.ink);}}
+  for(const object of CrabPhysics.obstacles(pz)){if(object.kind==='wall'){const z=object.z;box(base,[13,1,z],[3,2,3],[.9,.53,.36]);box(base,[13,2.25,z],[3.5,.22,3.5],palette.cream,RZ(.08));box(base,[12.2,1.2,z-1.51],[.6,.7,.03],palette.ink);}}
   blob(base,[-42,34,pz+105],[5,5,5],[1,.87,.45]);
   for(let i=0;i<5;i++){const x=22*Math.sin(i*13),z=pz+60+i*15;blob(base,[x,20+i*1.3,z],[6,1.2,2.3],[.93,.98,.94]);}
 }
 function wheel(root,z,turn){const center=mul(root,mul(T(0,.65,z),RY(turn)));const spin=mul(center,RX(phase));drawMesh(tire,spin,palette.ink);drawMesh(rim,spin,palette.cream);for(let i=0;i<8;i++){const a=i*Math.PI/4;beam(spin,[0,0,0],[0,.51*Math.cos(a),.51*Math.sin(a)],.009,palette.cream);}beam(center,[-.14,0,0],[.14,0,0],.07,palette.gold);}
 function crabBike(){
-  const bob=Math.sin(phase*2)*Math.min(Math.abs(velocity)*.006,.025),root=mul(T(px,bob,pz),RY(heading));
-  blob(base,[px,.007,pz],[1.1,.018,1.9],[.7,.65,.46]);
+  const drowning=ride.mode!=='riding', t=ride.deathTime;
+  const bob=Math.sin(phase*2)*Math.min(Math.abs(velocity)*.006,.025);
+  const sink=drowning?-Math.max(0,t-.28)*1.35:ride.y;
+  const roll=drowning?Math.min(t*2.2,1.65):Math.sin(ride.steer*.15)*Math.min(Math.abs(velocity)/5,1);
+  const root=mul(T(px,sink+bob+1.2,pz),mul(RY(heading),mul(RZ(roll),mul(RX(drowning?0:-ride.vy*.012),T(0,-1.2,0)))));
+  if(!drowning){blob(base,[px,.007,pz],[1.1/(1+ride.y*.2),.018,1.9/(1+ride.y*.2)],[.7,.65,.46]);}
   wheel(root,-1.2,0);wheel(root,1.25,steer*.32);
   const rear=[0,.65,-1.2],seat=[0,1.45,-.5],crank=[0,.7,-.1],fork=[0,1.4,.9],front=[0,.65,1.25];
   for(const [a,b] of [[rear,seat],[seat,crank],[crank,rear],[seat,fork],[fork,crank],[fork,front]]){beam(root,a,b,.045,palette.gold);}
@@ -147,8 +165,9 @@ function crabBike(){
     // 眼柄与朝前看的眼睛。
     beam(root,[side*.31,2.3,-.25],[side*.35,2.61,-.17],.065,palette.crab);
     blob(root,[side*.35,2.65,-.15],[.145,.18,.145],palette.cream);
-    blob(root,[side*.35,2.66,-.025],[.07,.095,.045],palette.ink);
-    blob(root,[side*.33,2.7,.012],[.022,.03,.015],[1,1,1]);
+    if(drowning){
+      const x=side*.35;beam(root,[x-.06,2.6,-.01],[x+.06,2.72,-.01],.022,palette.ink);beam(root,[x+.06,2.6,-.01],[x-.06,2.72,-.01],.022,palette.ink);
+    }else{blob(root,[side*.35,2.66,-.025],[.07,.095,.045],palette.ink);blob(root,[side*.33,2.7,.012],[.022,.03,.015],[1,1,1]);}
     // 两只蟹钳扶住车把。
     const shoulder=[side*.66,2.12,-.3],elbow=[side*.99,2.02,.33],hand=[side*.45,1.83,1.0];
     beam(root,shoulder,elbow,.085,palette.crab);beam(root,elbow,hand,.075,palette.lightCrab);
@@ -160,20 +179,36 @@ function crabBike(){
   blob(root,[0,2,-.93],[.5,.09,.1],[.05,.44,.46]);
   for(let i=0;i<3;i++){box(root,[.1+Math.sin(elapsed*6-i)*.08,2.05+i*.03,-1.1-i*.22],[.3,.04,.28],[.05,.44,.46],RY(Math.sin(elapsed*6-i)*.2));}
 }
+const splashRing=torus(.7,.025);
+function waterEffects(){
+  if(ride.mode==='riding'){return;}
+  const t=ride.deathTime;
+  for(let i=0;i<3;i++){
+    const size=.4+((t+i*.33)%1.8)*1.4;
+    drawMesh(splashRing,mul(T(px,.04+i*.005,pz),mul(RZ(Math.PI/2),S(1,size,size))),palette.cream);
+  }
+  for(let i=0;i<9;i++){
+    const age=(t+i*.19)%1.7,a=i*2.4;
+    blob(base,[px+Math.sin(a)*(.3+age*.15),.15+age*1.2,pz+Math.cos(a)*.5],[.05,.07,.05],[.8,.97,.93]);
+  }
+}
 function frame(now){
   const dt=last===null?0:Math.min((now-last)/1000,.04);last=now;elapsed+=dt;
-  const throttle=Number(active('forward'))-Number(active('back')),brake=active('brake');
-  if(throttle){velocity+=throttle*4.4*dt;}else{velocity*=Math.exp(-.7*dt);}
-  if(brake){velocity*=Math.exp(-8*dt);}
-  velocity=Math.max(-3,Math.min(9,velocity));if(Math.abs(velocity)<.015){velocity=0;}
-  const turn=Math.abs(joystickAxis)>.12?-joystickAxis:Number(active('left'))-Number(active('right'));steer+=(turn-steer)*Math.min(1,dt*9);
-  heading+=steer*velocity*.32*dt;
-  px+=Math.sin(heading)*velocity*dt;pz+=Math.cos(heading)*velocity*dt;distance+=Math.abs(velocity)*dt;phase+=velocity/.61*dt;
-  const angle=heading+Math.PI+orbit,target=[px,1.35,pz],desired=[px+Math.sin(angle)*zoom*Math.cos(pitch),1.35+Math.sin(pitch)*zoom,pz+Math.cos(angle)*zoom*Math.cos(pitch)];
+  const turn=Math.abs(joystickAxis)>.12?-joystickAxis:Number(active('left'))-Number(active('right'));
+  const previousMode=ride.mode;
+  CrabPhysics.step(ride,{throttle:Number(active('forward'))-Number(active('back')),brake:active('brake'),turn},dt);
+  if(previousMode==='riding'&&ride.mode!=='riding'){release();}
+  px=ride.x;pz=ride.z;heading=ride.heading;velocity=ride.speed;distance=ride.distance;phase=ride.phase;steer=ride.steer;
+  const lift=ride.mode==='riding'?ride.y*.5:0;
+  const angle=heading+Math.PI+orbit,target=[px,1.35+lift,pz],desired=[px+Math.sin(angle)*zoom*Math.cos(pitch),1.35+lift+Math.sin(pitch)*zoom,pz+Math.cos(angle)*zoom*Math.cos(pitch)];
   const follow=1-Math.exp(-7*dt);for(let i=0;i<3;i++){cameraPos[i]+=(desired[i]-cameraPos[i])*follow;cameraTarget[i]+=(target[i]-cameraTarget[i])*follow;}
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(loc.vp,false,new Float32Array(mul(perspective(canvas.width/canvas.height),lookAt(cameraPos,cameraTarget))));scenery();crabBike();
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(loc.vp,false,new Float32Array(mul(perspective(canvas.width/canvas.height),lookAt(cameraPos,cameraTarget))));scenery();crabBike();waterEffects();
   document.getElementById('speed').textContent=String(Math.round(Math.abs(velocity)*3.6));document.getElementById('distance').textContent=String(Math.floor(distance));
-  document.getElementById('tip').style.opacity=distance>2?'0':'1';canvas.dataset.position=px.toFixed(2)+','+pz.toFixed(2);canvas.dataset.heading=heading.toFixed(3);canvas.dataset.orbit=orbit.toFixed(3);canvas.dataset.frame=String(Math.round(elapsed*1000));requestAnimationFrame(frame);
+  document.getElementById('death-panel').hidden=ride.mode==='riding'||ride.deathTime<.85;
+  document.getElementById('game-state').textContent=ride.mode!=='riding'?'咕噜……落海了！':ride.y>.08?'腾空中！':ride.hitTime>0?(ride.hitKind==='tree'?'咚！撞到树干了':'咚！撞到墙了'):'';
+  document.getElementById('tip').style.opacity=distance>2||ride.mode!=='riding'?'0':'1';
+  canvas.dataset.position=px.toFixed(2)+','+pz.toFixed(2);canvas.dataset.heading=heading.toFixed(3);canvas.dataset.orbit=orbit.toFixed(3);canvas.dataset.frame=String(Math.round(elapsed*1000));canvas.dataset.height=ride.y.toFixed(3);canvas.dataset.mode=ride.mode;
+  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 </script>
