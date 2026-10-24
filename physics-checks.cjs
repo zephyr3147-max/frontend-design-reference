@@ -73,4 +73,17 @@ for(const kind of ['tree','wall']){
 const reverse={...P.createState(),x:13,z:11.36,speed:-3};P.step(reverse,{throttle:-1},.04);
 assert(reverse.crashDuration>0);assert(P.impactVisual({...reverse,crashTime:reverse.crashDuration*.35}).pitch<0,'倒车撞击应向相反方向前栽');
 const resetState=P.createState();assert.equal(resetState.crashDuration,0);assert.equal(resetState.impactSpeed,0);
+const forward=P.createState(),backward=P.createState();
+advance(forward,2400,{throttle:1});advance(backward,2400,{throttle:-1});
+assert(forward.speed>80,'持续前进应超过旧的 9m/s 限速');
+assert(backward.speed<-80,'持续倒车应超过旧的 -3m/s 限速');
+const fastTree={...P.createState(),x:-4.6,z:0,speed:300};
+P.step(fastTree,{throttle:1},.1);
+assert(fastTree.z<=7.902&&fastTree.hitKind==='tree','取消限速后高速不能穿树');
+assert(fastTree.impactSpeed>300,'高速撞击应保存真实车速');
+const fastWall={...P.createState(),x:13,z:-200,speed:5000};
+P.step(fastWall,{throttle:1},.1);
+assert(fastWall.z<=-139.348&&fastWall.hitKind==='wall','单帧跨区域也不能穿墙');
+const braking=forward.speed;P.step(forward,{brake:true},.1);assert(forward.speed<braking,'不限速时刹车仍须有效');
 console.log('PASS: progressive water entry, shallow-water escape, deep-water drowning and drag; jump/collision regressions; speed-scaled tree + wall rollovers and recovery');
+console.log('PASS: uncapped forward/reverse acceleration, extreme-speed tree/wall collision and braking');

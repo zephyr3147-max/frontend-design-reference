@@ -96,7 +96,6 @@
     state.speed = throttle ? state.speed+throttle*4.4*dt/(1+immersion*1.2) : state.speed*Math.exp(-.7*dt);
     state.speed*=Math.exp(-immersion*.8*dt);
     if (input.brake) { state.speed *= Math.exp(-8*dt); }
-    state.speed = Math.max(-3,Math.min(9,state.speed));
     if (Math.abs(state.speed)<.015) { state.speed=0; }
     state.steer += ((input.turn||0)-state.steer)*Math.min(1,dt*9);
     state.heading += state.steer*state.speed*.32*dt;
@@ -107,13 +106,15 @@
     const steps=Math.max(1,Math.ceil(Math.abs(state.speed)*dt/.10));
     const dx=Math.sin(state.heading)*state.speed*dt/steps;
     const dz=Math.cos(state.heading)*state.speed*dt/steps;
-    const nearby=obstacles(state.z);
+    let nearby=obstacles(state.z),obstacleCell=Math.floor(state.z/24);
     // 在归零速度之前保存撞击瞬间的速度，不能用停车后的速度驱动动画。
     const incomingSpeed=state.speed;
     let collisionNormal=[0,0];
     let collision=false;
     for (let i=0;i<steps;i++) {
       state.x+=dx; state.z+=dz;
+      const currentCell=Math.floor(state.z/24);
+      if(currentCell!==obstacleCell){nearby=obstacles(state.z);obstacleCell=currentCell;}
       for (let pass=0;pass<3;pass++) {
         for (const obstacle of nearby) {
           if (Math.abs(obstacle.x-state.x)>4 || Math.abs(obstacle.z-state.z)>4) { continue; }
