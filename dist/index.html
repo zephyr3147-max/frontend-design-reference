@@ -148,10 +148,12 @@ function wheel(root,z,turn){const center=mul(root,mul(T(0,.65,z),RY(turn)));cons
 function crabBike(){
   const drowning=ride.mode!=='riding', t=ride.deathTime;
   const bob=Math.sin(phase*2)*Math.min(Math.abs(velocity)*.006,.025);
-  const sink=drowning?-Math.max(0,t-.28)*1.35:ride.y;
-  const roll=drowning?Math.min(t*2.2,1.65):Math.sin(ride.steer*.15)*Math.min(Math.abs(velocity)/5,1);
-  const root=mul(T(px,sink+bob+1.2,pz),mul(RY(heading),mul(RZ(roll),mul(RX(drowning?0:-ride.vy*.012),T(0,-1.2,0)))));
-  if(!drowning){blob(base,[px,.007,pz],[1.1/(1+ride.y*.2),.018,1.9/(1+ride.y*.2)],[.7,.65,.46]);}
+  const impact=CrabPhysics.impactVisual(ride);
+  const sink=drowning?-ride.waterDepth-Math.max(0,t-.28)*1.35:ride.y-ride.waterDepth+impact.lift;
+  const waterWobble=Math.max(0,ride.waterDepth-1.1)*Math.sin(elapsed*4)*.18;
+  const roll=drowning?Math.min(t*2.2,1.65):impact.roll+waterWobble+Math.sin(ride.steer*.15)*Math.min(Math.abs(velocity)/5,1);
+  const root=mul(T(px,sink+bob+1.2,pz),mul(RY(heading),mul(RZ(roll),mul(RX(drowning?0:impact.pitch-ride.vy*.012),T(0,-1.2,0)))));
+  if(!drowning&&ride.waterDepth<.01){blob(base,[px,.007,pz],[1.1/(1+ride.y*.2),.018,1.9/(1+ride.y*.2)],[.7,.65,.46]);}
   wheel(root,-1.2,0);wheel(root,1.25,steer*.32);
   const rear=[0,.65,-1.2],seat=[0,1.45,-.5],crank=[0,.7,-.1],fork=[0,1.4,.9],front=[0,.65,1.25];
   for(const [a,b] of [[rear,seat],[seat,crank],[crank,rear],[seat,fork],[fork,crank],[fork,front]]){beam(root,a,b,.045,palette.gold);}
@@ -181,33 +183,45 @@ function crabBike(){
 }
 const splashRing=torus(.7,.025);
 function waterEffects(){
-  if(ride.mode==='riding'){return;}
-  const t=ride.deathTime;
-  for(let i=0;i<3;i++){
-    const size=.4+((t+i*.33)%1.8)*1.4;
-    drawMesh(splashRing,mul(T(px,.04+i*.005,pz),mul(RZ(Math.PI/2),S(1,size,size))),palette.cream);
+  const drowning=ride.mode!=='riding';
+  if(!drowning&&!ride.wet){return;}
+  const t=drowning?ride.deathTime:elapsed,waterX=Math.min(px,-6.3);
+  for(let i=0;i<(drowning?3:2);i++){
+    const size=drowning?.4+((t+i*.33)%1.8)*1.4:.2+((t*1.4+i*.4)%1)*.7;
+    drawMesh(splashRing,mul(T(waterX,.04+i*.005,pz),mul(RZ(Math.PI/2),S(1,size,size))),palette.cream);
   }
-  for(let i=0;i<9;i++){
+  for(let i=0;i<(drowning?9:ride.waterDepth>.6?3:0);i++){
     const age=(t+i*.19)%1.7,a=i*2.4;
-    blob(base,[px+Math.sin(a)*(.3+age*.15),.15+age*1.2,pz+Math.cos(a)*.5],[.05,.07,.05],[.8,.97,.93]);
+    blob(base,[waterX+Math.sin(a)*(.3+age*.15),.08+age*(drowning?1.2:.22),pz+Math.cos(a)*.5],[.05,.07,.05],[.8,.97,.93]);
   }
 }
 function frame(now){
   const dt=last===null?0:Math.min((now-last)/1000,.04);last=now;elapsed+=dt;
   const turn=Math.abs(joystickAxis)>.12?-joystickAxis:Number(active('left'))-Number(active('right'));
   const previousMode=ride.mode;
+  const wasCrashing=ride.crashTime<ride.crashDuration;
   CrabPhysics.step(ride,{throttle:Number(active('forward'))-Number(active('back')),brake:active('brake'),turn},dt);
-  if(previousMode==='riding'&&ride.mode!=='riding'){release();}
+  if((previousMode==='riding'&&ride.mode!=='riding')||(!wasCrashing&&ride.crashTime<ride.crashDuration)){release();}
   px=ride.x;pz=ride.z;heading=ride.heading;velocity=ride.speed;distance=ride.distance;phase=ride.phase;steer=ride.steer;
-  const lift=ride.mode==='riding'?ride.y*.5:0;
+  const lift=(ride.mode==='riding'?ride.y*.5:0)-Math.min(ride.waterDepth,.9)*.5;
   const angle=heading+Math.PI+orbit,target=[px,1.35+lift,pz],desired=[px+Math.sin(angle)*zoom*Math.cos(pitch),1.35+lift+Math.sin(pitch)*zoom,pz+Math.cos(angle)*zoom*Math.cos(pitch)];
   const follow=1-Math.exp(-7*dt);for(let i=0;i<3;i++){cameraPos[i]+=(desired[i]-cameraPos[i])*follow;cameraTarget[i]+=(target[i]-cameraTarget[i])*follow;}
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(loc.vp,false,new Float32Array(mul(perspective(canvas.width/canvas.height),lookAt(cameraPos,cameraTarget))));scenery();crabBike();waterEffects();
+  const impact=CrabPhysics.impactVisual(ride);
+  const reduceEffects=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const shake=reduceEffects?0:impact.shake;
+  const eye=cameraPos.map((v,i)=>v+Math.sin(elapsed*(80+i*13))*shake*(i===1?.7:1));
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(loc.vp,false,new Float32Array(mul(perspective(canvas.width/canvas.height),lookAt(eye,cameraTarget))));scenery();crabBike();waterEffects();
+  if(ride.crashTime<ride.crashDuration&&ride.mode==='riding'){
+    for(let i=0;i<4;i++){const a=elapsed*7+i*Math.PI/2,x=px+Math.cos(a)*.9,z=pz+Math.sin(a)*.6,y=ride.y+impact.lift+2.9+Math.sin(a*2)*.1;
+      blob(base,[x,y,z],[.06,.14,.06],palette.gold);blob(base,[x,y,z],[.13,.035,.04],palette.gold);}
+  }
   document.getElementById('speed').textContent=String(Math.round(Math.abs(velocity)*3.6));document.getElementById('distance').textContent=String(Math.floor(distance));
   document.getElementById('death-panel').hidden=ride.mode==='riding'||ride.deathTime<.85;
-  document.getElementById('game-state').textContent=ride.mode!=='riding'?'咕噜……落海了！':ride.y>.08?'腾空中！':ride.hitTime>0?(ride.hitKind==='tree'?'咚！撞到树干了':'咚！撞到墙了'):'';
+  const crashLabel=(ride.impactStrength>.45?'高速':'')+(ride.hitKind==='tree'?'撞树':'撞墙')+'，翻车啦！ '+Math.round(ride.impactSpeed*3.6)+' km/h';
+  const waterLabel=ride.waterDepth<.5?'车轮入水了，可以倒车回岸':ride.waterDepth<1.2?'水到车架了，快回岸上！':'快淹到螃蟹了，赶紧回岸！';
+  document.getElementById('game-state').textContent=ride.mode!=='riding'?'咕噜……陷入深水了！':ride.crashTime<ride.crashDuration?crashLabel:ride.wet?waterLabel:ride.y>.08?'腾空中！':ride.hitTime>0?(ride.hitKind==='tree'?'咚！撞到树干了':'咚！撞到墙了'):'';
   document.getElementById('tip').style.opacity=distance>2||ride.mode!=='riding'?'0':'1';
-  canvas.dataset.position=px.toFixed(2)+','+pz.toFixed(2);canvas.dataset.heading=heading.toFixed(3);canvas.dataset.orbit=orbit.toFixed(3);canvas.dataset.frame=String(Math.round(elapsed*1000));canvas.dataset.height=ride.y.toFixed(3);canvas.dataset.mode=ride.mode;
+  canvas.dataset.position=px.toFixed(2)+','+pz.toFixed(2);canvas.dataset.heading=heading.toFixed(3);canvas.dataset.orbit=orbit.toFixed(3);canvas.dataset.frame=String(Math.round(elapsed*1000));canvas.dataset.height=ride.y.toFixed(3);canvas.dataset.mode=ride.mode;canvas.dataset.impactSpeed=ride.impactSpeed.toFixed(2);canvas.dataset.crashing=String(ride.crashTime<ride.crashDuration);canvas.dataset.crashRoll=impact.roll.toFixed(3);canvas.dataset.waterDepth=ride.waterDepth.toFixed(3);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
