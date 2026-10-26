@@ -87,7 +87,8 @@ a:focus-visible,button:focus-visible { outline:2px solid var(--violet); outline-
 @keyframes orbit-spin { to { transform:rotate(-360deg) } }
 @keyframes orbit-counter-spin { from { transform:rotate(calc(-1*var(--angle))) } to { transform:rotate(calc(360deg - var(--angle))) } }
 .app { position:absolute; left:0; top:0; display:flex; flex-direction:column; align-items:center; gap:8px; width:86px; padding:0; border:0; background:transparent; transform:translate(-50%,-50%); color:#656779; text-align:center; border-radius:40px }
-.home-ready .app { animation:orb-arrive .75s calc(1.5s + var(--i)*.065s) var(--ease) both }
+/* Start the icons while the handwriting is still revealing, without an idle beat. */
+.home-ready .app { animation:orb-arrive .75s calc(.9s + var(--i)*.035s) var(--ease) both }
 @keyframes orb-arrive { from { opacity:0; transform:translate(-50%,-50%) rotate(-22deg) scale(.45) } to { opacity:1; transform:translate(-50%,-50%) rotate(0) scale(1) } }
 .app-orb { display:grid; place-items:center; width:var(--orb); height:var(--orb); border:1px solid #dfdfe8; border-radius:50%; background:#fdfdff; transition:transform .3s var(--ease),background .25s,box-shadow .25s }
 .mascot { display:block; width:38px; height:38px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; overflow:visible }
