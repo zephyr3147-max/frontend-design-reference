@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('dist/index.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const source = fs.readFileSync('dist/game.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 const noop = () => {};
 const gl = new Proxy({}, { get: (_, name) => {
   if (['getShaderParameter', 'getProgramParameter'].includes(name)) { return () => true; }

@@ -1,0 +1,156 @@
+:root {
+  color-scheme:light; --paper:#f7f7fa; --ink:#17171d; --muted:#82828e; --night:#111116;
+  --violet:#9b65ff; --cyan:#65eef0; --ease:cubic-bezier(.22,1,.36,1);
+  --gate-half:clamp(76px,10vw,122px);
+}
+* { box-sizing:border-box }
+html,body { margin:0; background:var(--paper); color:var(--ink) }
+body { font-family:"Arial","PingFang SC","Microsoft YaHei",sans-serif; -webkit-font-smoothing:antialiased }
+body.welcome-open { overflow:hidden }
+[hidden] { display:none!important }
+a { color:inherit; text-decoration:none; -webkit-tap-highlight-color:transparent }
+button { font:inherit; -webkit-tap-highlight-color:transparent }
+a,button { touch-action:manipulation }
+a:focus-visible,button:focus-visible { outline:2px solid var(--violet); outline-offset:7px }
+.svg-library { position:absolute; width:0; height:0; overflow:hidden }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; clip:rect(0,0,0,0); overflow:hidden; white-space:nowrap }
+.icon { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round }
+.shell { width:min(1160px,calc(100% - 96px)); margin-inline:auto }
+
+/* Four overlapping sheets share a rotating coordinate system: cross -> square aperture. */
+.welcome { position:fixed; inset:0; z-index:20; overflow:hidden; isolation:isolate; background:#ecebf2; color:var(--ink) }
+.intro-brand { position:absolute; z-index:6; top:37px; left:max(48px,calc((100vw - 1160px)/2)); font-size:24px; font-weight:700; letter-spacing:-1.4px }
+.intro-brand span { color:var(--violet); display:inline-block; margin-left:7px; font-weight:400 }
+.panel-stage { position:absolute; inset:0; pointer-events:none }
+.panel-rig { position:absolute; top:50%; left:50%; width:0; height:0 }
+.gate-panel { position:absolute; width:160vmax; height:160vmax; border:1px solid #24232b; transform:translate(0,0); box-shadow:0 8px 32px #2520351a,0 1px 4px #25203524; will-change:transform }
+.panel-nw { right:0; bottom:0; z-index:1; background:linear-gradient(145deg,#fefeff 70%,#e7e6ee); --x:calc(-1*var(--gate-half)); --y:var(--gate-half) }
+.panel-ne { left:0; bottom:0; z-index:2; background:linear-gradient(215deg,#fff 72%,#f1f0f5); --x:calc(-1*var(--gate-half)); --y:calc(-1*var(--gate-half)) }
+.panel-se { left:0; top:0; z-index:3; background:linear-gradient(325deg,#f9f9fc 72%,#e9e8f0); --x:var(--gate-half); --y:calc(-1*var(--gate-half)) }
+.panel-sw { right:0; top:0; z-index:4; background:linear-gradient(40deg,#fdfdff 72%,#f0eff5); --x:var(--gate-half); --y:var(--gate-half) }
+.welcome-open .panel-rig { animation:quarter-turn 1.65s .65s var(--ease) both }
+.welcome-open .gate-panel { animation:sheet-open 1.65s .65s var(--ease) both }
+@keyframes quarter-turn { from { transform:rotate(0) } to { transform:rotate(-30deg) } }
+@keyframes sheet-open { 0%,12% { transform:translate(0,0) } 100% { transform:translate(var(--x),var(--y)) } }
+.side-word { position:absolute; z-index:5; line-height:1.08; opacity:0; pointer-events:none }
+.side-word>span { display:block; white-space:nowrap }
+.welcome-dot { color:var(--violet) }
+.word-left { left:6%; top:36%; font-size:clamp(40px,5.5vw,80px); font-weight:600; letter-spacing:-.055em; --side:-16px }
+.word-right { right:10%; top:79%; font-size:clamp(18px,1.9vw,25px); font-weight:400; letter-spacing:-.025em; color:#777582; --side:16px }
+.welcome-open .side-word { animation:side-reveal .8s 1.65s var(--ease) both }
+@keyframes side-reveal { from { opacity:0; transform:translate(var(--side),-50%) } to { opacity:1; transform:translate(0,-50%) } }
+/* The clickable square is the aperture itself, with no separate button card. */
+.enter-button { position:absolute; top:50%; left:50%; z-index:5; width:calc(2*var(--gate-half)); height:calc(2*var(--gate-half)); display:grid; place-items:center; transform:translate(-50%,-50%) rotate(-30deg); font-size:13px; letter-spacing:.025em; background:transparent; opacity:0; visibility:hidden; transition:background .3s,color .3s; -webkit-tap-highlight-color:transparent }
+.welcome-open .enter-button { animation:button-reveal .6s 1.95s both }
+.button-content { display:flex; align-items:center; gap:13px; transform:rotate(30deg); }
+.button-label { white-space:nowrap }
+.button-content .icon { width:18px; transition:transform .3s }
+.enter-button:hover,.enter-button:focus-visible { background:#dfd6f24f; color:#6543a3 }
+.enter-button:hover .icon { transform:translateX(4px) }
+.enter-button:active { background:#d9cfec80 }
+.enter-button:focus-visible { outline:2px solid var(--violet); outline-offset:-7px }
+@keyframes button-reveal { from { opacity:0; visibility:hidden } to { opacity:1; visibility:visible } }
+.is-entering .panel-rig { animation:rig-exit 1.1s var(--ease) both }
+.is-entering .gate-panel { animation:sheet-exit 1.1s var(--ease) both }
+@keyframes rig-exit { from { transform:rotate(-30deg) } to { transform:rotate(-45deg) } }
+@keyframes sheet-exit { from { transform:translate(var(--x),var(--y)) } to { transform:translate(calc(var(--x)*12),calc(var(--y)*12)) } }
+.is-entering .side-word,.is-entering .intro-brand,.is-entering .enter-button { animation:copy-out .25s both }
+.is-entering.welcome-open .welcome { animation:backdrop-out .65s both }
+@keyframes copy-out { to { opacity:0; visibility:hidden } }
+@keyframes backdrop-out { from { background:#ecebf2 } to { background:transparent } }
+/* Two compact text entrances; a small offset echoes the diagonal opening. */
+.home { min-height:100svh; display:flex; flex-direction:column; transition:opacity .85s .12s,transform 1.05s var(--ease) }
+.welcome-open .home { opacity:0; transform:scale(.975) }
+.welcome-open.is-entering .home { opacity:1; transform:none }
+.topbar { height:95px; display:flex; justify-content:space-between; align-items:center; flex:none }
+.header-tools { display:flex; align-items:center; gap:10px }
+.brand { display:inline-flex; align-items:baseline; gap:7px; font-size:24px; font-weight:700; letter-spacing:-1.3px }
+.brand span { color:var(--violet); font-weight:400 }
+.replay-button { width:34px; height:34px; padding:0; display:grid; place-items:center; border:1px solid #dedee7; background:transparent; color:#777784; border-radius:50%; cursor:pointer; transition:background .2s,color .2s }
+.replay-button:hover { color:var(--ink); background:#eeeaf8 }
+.replay-button .icon { width:16px; height:16px }
+@font-face { font-family:Caveat; src:url('./assets/fonts/caveat.ttf') format('truetype'); font-style:normal; font-weight:400 700; font-display:swap }
+.home-main { flex:1; display:grid; place-items:center; padding:0 0 20px }
+.orbit-stage { --radius:224px; --orb:58px; position:relative; width:100%; height:540px; isolation:isolate; overflow:clip }
+.identity { position:absolute; top:50%; left:50%; width:360px; transform:translate(-50%,-50%); text-align:center; pointer-events:none }
+.identity h1 { margin:0; color:#e9605c; font-family:Caveat,'Segoe Print',cursive; font-size:57px; font-weight:600; line-height:1.05; letter-spacing:-.025em }
+.identity h1:focus { outline:none }
+.identity h1>span { display:block; padding:.08em .12em }
+.identity h1>span+span { margin-left:24px; transform:rotate(-3deg) }
+.home-ready .identity h1>span { animation:ink-arrive .9s .1s var(--ease) both }
+.home-ready .identity h1>span+span { animation-delay:.42s }
+@keyframes ink-arrive { from { clip-path:inset(0 100% 0 0); opacity:0 } to { clip-path:inset(0 0 0 0); opacity:1 } }
+.orbit-track { position:absolute; width:0; height:0; top:50%; left:50%; animation:orbit-spin 120s linear infinite paused }
+.orbit-slot { position:absolute; width:0; height:0; transform:rotate(var(--angle)) translateX(var(--radius)) }
+.orbit-counter { position:absolute; width:0; height:0; transform:rotate(calc(-1*var(--angle))); animation:orbit-counter-spin 120s linear infinite paused }
+.home-ready .orbit-track,.home-ready .orbit-counter { animation-play-state:running }
+@keyframes orbit-spin { to { transform:rotate(-360deg) } }
+@keyframes orbit-counter-spin { from { transform:rotate(calc(-1*var(--angle))) } to { transform:rotate(calc(360deg - var(--angle))) } }
+.app { position:absolute; left:0; top:0; display:flex; flex-direction:column; align-items:center; gap:8px; width:86px; padding:0; border:0; background:transparent; transform:translate(-50%,-50%); color:#656779; text-align:center; border-radius:40px }
+.home-ready .app { animation:orb-arrive .75s calc(1.5s + var(--i)*.065s) var(--ease) both }
+@keyframes orb-arrive { from { opacity:0; transform:translate(-50%,-50%) rotate(-22deg) scale(.45) } to { opacity:1; transform:translate(-50%,-50%) rotate(0) scale(1) } }
+.app-orb { display:grid; place-items:center; width:var(--orb); height:var(--orb); border:1px solid #dfdfe8; border-radius:50%; background:#fdfdff; transition:transform .3s var(--ease),background .25s,box-shadow .25s }
+.mascot { display:block; width:38px; height:38px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; overflow:visible }
+.mascot .eye { fill:currentColor; stroke:none }
+.app-name { font-size:11px; line-height:1.3; white-space:nowrap; color:#666674; letter-spacing:.015em }
+.app-journal { color:#bd5d5f; --mascot-fill:#fff4f2 }
+.app-journal .app-orb { background:#fff0ee; border-color:#efd1d0 }
+.app-crab { color:#477d9c; --mascot-fill:#e5f4fb }
+.app-crab .app-orb { background:#edf7fb; border-color:#cce1e9 }
+.app-pending { color:#858693; cursor:default; --mascot-fill:#f5f5f9 }
+.app-pending .app-orb { background:#f3f3f8; border-color:#e2e2e9 }
+.app-pending .app-name { font-family:Arial,'Microsoft YaHei',sans-serif; font-size:9px; color:#858591 }
+.app:not(:disabled):hover .app-orb,.app:not(:disabled):focus-visible .app-orb { transform:translateY(-5px) rotate(-8deg); box-shadow:0 8px 18px #29243612 }
+.app:not(:disabled):hover .mascot { animation:mascot-wave .5s var(--ease) }
+@keyframes mascot-wave { 0%,100% { transform:rotate(0) } 35% { transform:rotate(10deg) } 70% { transform:rotate(-8deg) } }
+.app:not(:disabled):active .app-orb { transform:scale(.9) }
+.app:focus-visible { outline-offset:-2px }
+.orbit-stage:has(.app:not(:disabled):hover,.app:focus-visible) .orbit-track,.orbit-stage:has(.app:not(:disabled):hover,.app:focus-visible) .orbit-counter,.orbit-paused .orbit-track,.orbit-paused .orbit-counter { animation-play-state:paused }
+.orbit-toggle { display:grid; place-items:center; padding:0; width:34px; height:34px; border:1px solid #e0dfe8; border-radius:50%; color:#898694; background:transparent; font-size:12px; cursor:pointer }
+.orbit-toggle:hover { background:#eeedf5; color:#494351 }
+.footer time { font-size:9px; transform:translateY(3px) }
+.footer { display:flex; justify-content:space-between; gap:15px; padding:24px 0; color:#9695a1; font-size:10px; letter-spacing:.02em; flex:none }
+@media(max-width:640px) {
+  :root { --gate-half:82px }
+  .shell { width:calc(100% - 40px) }
+  .intro-brand { top:28px; left:20px; font-size:22px }
+  .word-left { left:8%; top:24%; font-size:clamp(36px,10vw,56px) }
+  .word-right { right:9%; top:78%; font-size:18px }
+  .enter-button { font-size:12px }
+  .button-content { gap:9px }
+  .topbar { height:80px }
+  .brand { font-size:22px }
+  .orbit-stage { --radius:min(152px,calc((100vw - 70px)/2)); --orb:46px; width:calc(100% + 40px); height:410px }
+  .identity { width:205px }
+  .identity h1 { font-size:35px }
+  .identity h1>span+span { margin-left:12px }
+  .app { width:68px; gap:6px }
+  .mascot { width:32px; height:32px }
+  .app-name { font-size:10px }
+  .footer { font-size:9px; padding:21px 0 }
+  .footer time { font-size:8px }
+}
+@media(max-width:360px) {
+  :root { --gate-half:72px }
+  .word-left { font-size:36px }
+  .word-right { font-size:16px }
+  .identity { width:174px }
+  .identity h1 { font-size:30px }
+  .orbit-stage { --orb:42px; height:360px }
+  .mascot { width:29px; height:29px }
+}
+@media(max-height:600px) and (min-width:641px) {
+  :root { --gate-half:76px }
+  .word-left { top:23%; font-size:52px }
+  .word-right { top:80%; font-size:18px }
+  .home-main { padding:0 0 10px }
+  .orbit-stage { --radius:182px; height:450px }
+  .identity { width:280px }
+  .identity h1 { font-size:44px }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms!important; animation-delay:0ms!important; transition-duration:.01ms!important; transition-delay:0ms!important }
+  .app:hover .app-orb,.enter-button:hover .icon { transform:none }
+  .orbit-track,.orbit-counter,.home-ready .orbit-track,.home-ready .orbit-counter { animation:none }
+  .orbit-toggle { display:none }
+}

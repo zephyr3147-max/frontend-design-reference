@@ -1,230 +1,78 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="用触屏摇杆控制螃蟹骑自行车，在三维海岸上自由兜风。支持手机和电脑。">
-<meta name="theme-color" content="#bce5e5">
-<title>螃蟹骑行 · 第三人称</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#16494e;background:#bce5e5}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}.title{position:absolute;top:26px;left:30px;pointer-events:none}h1{font-size:25px;margin:0 0 7px;font-weight:900}.title p{font-size:13px;margin:0}.actions{position:absolute;top:26px;right:26px;display:flex;gap:8px}button{font:inherit;border:1px solid #16494e20;border-radius:18px;background:#fffff0e8;color:#16494e;padding:10px 15px;cursor:pointer;touch-action:none;user-select:none}button:hover{background:white}button:focus-visible{outline:3px solid #e86a50;outline-offset:3px}.hud{position:absolute;bottom:28px;left:30px;pointer-events:none}.speed{font-size:44px;font-weight:900;line-height:1}.speed small{font-size:13px;font-weight:400;margin-left:6px}.distance{font-size:12px;margin-top:9px}.help{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);background:#fffff0e8;padding:11px 20px;border-radius:20px;font-size:12px;text-align:center;line-height:1.8;white-space:nowrap}.touch{position:absolute;bottom:100px;left:25px;display:flex;gap:8px}.touch button{width:52px;height:52px;padding:0;font-size:23px;background:#fff9e6cf}.pedals{left:auto;right:25px}.pedals button{width:66px;font-size:14px}.touch button.held{background:#ffd26c}.badge{position:absolute;right:28px;bottom:28px;font-size:12px;pointer-events:none}#error{position:absolute;top:40%;left:10%;right:10%;padding:20px;background:#fff9e6;border-radius:16px;display:none}.tip{position:absolute;top:105px;left:30px;background:#fff9e6c9;border-radius:15px;padding:8px 14px;font-size:12px;pointer-events:none;transition:opacity 1s}@media(max-width:650px){.title{left:18px;top:18px}h1{font-size:21px}.title p{font-size:11px;max-width:185px}.actions{right:14px;top:18px;flex-direction:column;gap:6px}.actions button{font-size:11px;padding:8px 11px}.hud{bottom:21px;left:20px}.help{bottom:20px;left:auto;right:15px;transform:none;font-size:10px;padding:9px 13px}.badge{display:none}.touch{left:15px;bottom:102px}.pedals{left:auto;right:15px}.touch button{width:46px;height:49px}.pedals button{width:56px}.tip{left:18px;top:94px;font-size:11px}}
-html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none}
-.joystick{position:absolute;left:28px;bottom:95px;width:114px;height:114px;border-radius:50%;background:#ffffef88;border:2px solid #ffffefb3;touch-action:none;display:grid;place-items:center;cursor:grab;box-shadow:inset 0 0 0 18px #ffffff24}
-.joystick:focus-visible{outline:3px solid #e86a50;outline-offset:4px}
-.stick{width:53px;height:53px;border-radius:50%;background:#fff9e6ed;box-shadow:0 4px 12px #16494e24;display:grid;place-items:center;font-size:24px;pointer-events:none;will-change:transform}
-.joystick-label{position:absolute;bottom:-23px;font-size:12px;pointer-events:none}
-.pedals{bottom:105px}.pedals button{width:70px;height:62px;font-size:15px;font-weight:700;box-shadow:0 4px 14px #16494e12}
-.pedals button[data-key="forward"]{background:#ffd26ce8}.pedals button.held{background:#f2ad43;transform:translateY(2px)}
-.mobile-help{display:none}.touch button{-webkit-tap-highlight-color:transparent}
-@media(pointer:coarse),(max-width:650px){
-  .title{top:calc(16px + env(safe-area-inset-top));left:18px}.actions{top:calc(16px + env(safe-area-inset-top));right:14px}
-  .joystick{left:max(16px,env(safe-area-inset-left));bottom:calc(46px + env(safe-area-inset-bottom));width:104px;height:104px}
-  .stick{width:50px;height:50px}.joystick-label{display:none}
-  .pedals{left:auto;right:max(16px,env(safe-area-inset-right));bottom:calc(54px + env(safe-area-inset-bottom));gap:7px}
-  .pedals button{width:53px;height:58px;padding:0;font-size:13px}
-  .hud{bottom:calc(178px + env(safe-area-inset-bottom));left:20px}.speed{font-size:34px}.distance{font-size:11px}
-  .help{bottom:calc(8px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);padding:5px 11px;font-size:10px;white-space:nowrap;background:#ffffefb0}
-  .keyboard-help{display:none}.mobile-help{display:block}.badge{display:none}
-  .tip{top:calc(98px + env(safe-area-inset-top));left:18px;font-size:11px;max-width:240px}
-}
-@media(max-height:470px){.title h1{font-size:18px}.title p,.tip{display:none}.actions{flex-direction:row}.hud{bottom:calc(153px + env(safe-area-inset-bottom))}.speed{font-size:27px}.joystick{width:92px;height:92px;bottom:34px}.pedals{bottom:45px}}
-.jump-control{position:absolute;right:25px;bottom:185px;width:70px;height:56px;padding:0;white-space:nowrap;background:#e87559;color:white;font-size:14px;font-weight:700}
-.joystick-label{display:none}
-.game-state{position:absolute;left:30px;top:142px;max-width:270px;font-size:13px;background:#ffffefde;padding:8px 13px;border-radius:14px;pointer-events:none}
-.game-state:empty{display:none}.death-panel{position:absolute;inset:0;display:grid;place-items:center;background:#16494e24}.death-panel[hidden]{display:none}
-.death-card{text-align:center;max-width:300px;margin:20px;padding:25px 28px;background:#fff9e9ef;border-radius:25px;box-shadow:0 15px 55px #16494e24}.death-card h2{margin:0 0 12px;font-size:27px}.death-card p{font-size:14px;line-height:1.8;margin:0 0 18px}.death-card button{background:#e87559;color:white;font-weight:700;padding:12px 24px}
-@media(pointer:coarse),(max-width:650px){.jump-control{right:max(16px,env(safe-area-inset-right));bottom:calc(130px + env(safe-area-inset-bottom));width:60px;height:52px;padding:0}.game-state{left:18px;top:calc(134px + env(safe-area-inset-top));font-size:12px}.mobile-help{font-size:9px}}
-@media(max-height:470px){.jump-control{bottom:118px}.game-state{top:58px;left:18px}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="The personal space of ZhZb. Journal and Crab Coast.">
+  <meta name="theme-color" content="#f7f7fa">
+  <title>ZhZb / Personal space</title>
+  <link rel="icon" href="./assets/zhzb.svg" type="image/svg+xml">
+  <link rel="preload" href="./assets/fonts/caveat.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="./home.css?v=orbit2">
+  <script src="./home.js?v=orbit2" defer></script>
 </head>
 <body>
-<canvas id="world" tabindex="0" aria-label="可操控的三维螃蟹骑自行车场景。W前进，S后退，A和D转向，空格跳跃，Shift刹车，拖动画面调整视角。"></canvas>
-<header class="title"><h1>螃蟹的海岸骑行</h1><p>把海风装进口袋，骑到前面去。</p></header>
-<div class="actions"><button id="camera">视角复位</button><button id="reset">重新出发</button></div>
-<div class="tip" id="tip">按住「前进」，同时拨动左侧摇杆转向</div>
-<div class="hud"><div class="speed"><span id="speed">0</span><small>km/h</small></div><div class="distance">已骑行 <span id="distance">0</span> 米</div></div>
-<div class="help"><span class="keyboard-help">W / S 前进与后退　A / D 转向　空格跳跃　Shift 刹车<br>拖动环绕视角 · 滚轮缩放 · R 重新出发</span><span class="mobile-help">摇杆转向 · 按钮跳跃/骑行 · 拖动看四周 · 双指缩放</span></div>
-<div class="joystick" id="joystick" role="group" aria-label="转向摇杆，向左或向右拖动" tabindex="0"><span class="stick" id="stick">↔</span><span class="joystick-label">转向摇杆</span></div>
-<div class="touch pedals"><button data-key="brake">刹车</button><button data-key="back">后退</button><button data-key="forward">前进</button></div>
-<button class="jump-control" data-key="jump" aria-label="跳跃">跳跃 ↑</button>
-<div class="game-state" id="game-state" role="status" aria-live="polite"></div>
-<div class="death-panel" id="death-panel" hidden><section class="death-card" role="dialog" aria-label="落海后重新出发"><h2>螃蟹落海啦！</h2><p>咕噜咕噜……<br>自行车可不会游泳。回岸上再骑一次吧！</p><button id="respawn">回到岸上</button></section></div>
-<div class="badge">第三人称跟随视角</div><div id="error" role="alert"></div>
-<script src="physics.js"></script>
-<script>
-'use strict';
-const canvas=document.getElementById('world'), gl=canvas.getContext('webgl',{antialias:true,alpha:false});
-if(!gl){document.getElementById('error').style.display='block';document.getElementById('error').textContent='当前浏览器未启用 WebGL，请使用支持硬件加速的浏览器打开。';throw Error('WebGL unavailable');}
-const vertex=`attribute vec3 position;attribute vec3 normal;uniform mat4 model;uniform mat4 viewProjection;varying vec3 n;varying float depth;void main(){vec4 world=model*vec4(position,1.);gl_Position=viewProjection*world;n=normalize(mat3(model)*normal);depth=gl_Position.w;}`;
-const fragment=`precision mediump float;uniform vec3 color;varying vec3 n;varying float depth;void main(){float light=.67+.33*max(dot(normalize(n),normalize(vec3(-.5,1.,.6))),0.);vec3 shade=color*light;float fog=smoothstep(35.,150.,depth);gl_FragColor=vec4(mix(shade,vec3(.737,.898,.898),fog),1.);}`;
-function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){throw Error(gl.getShaderInfoLog(s));}return s;}
-const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS)){throw Error(gl.getProgramInfoLog(program));}gl.useProgram(program);
-const loc={p:gl.getAttribLocation(program,'position'),n:gl.getAttribLocation(program,'normal'),m:gl.getUniformLocation(program,'model'),vp:gl.getUniformLocation(program,'viewProjection'),c:gl.getUniformLocation(program,'color')};
-gl.enable(gl.DEPTH_TEST);gl.clearColor(.737,.898,.898,1);
-const I=()=>[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-function mul(a,b){const o=new Array(16).fill(0);for(let c=0;c<4;c++){for(let r=0;r<4;r++){for(let k=0;k<4;k++){o[c*4+r]+=a[k*4+r]*b[c*4+k];}}}return o;}
-function T(x,y,z){const m=I();m[12]=x;m[13]=y;m[14]=z;return m;}
-function S(x,y,z){const m=I();m[0]=x;m[5]=y;m[10]=z;return m;}
-function RX(a){const c=Math.cos(a),s=Math.sin(a);return [1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];}
-function RY(a){const c=Math.cos(a),s=Math.sin(a);return [c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}
-function RZ(a){const c=Math.cos(a),s=Math.sin(a);return [c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1];}
-function normalize(a){const l=Math.hypot(...a)||1;return a.map(v=>v/l);}
-function cross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
-const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
-function lookAt(eye,target){const z=normalize(eye.map((v,i)=>v-target[i])),x=normalize(cross([0,1,0],z)),y=cross(z,x);return[x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1];}
-function perspective(aspect){const f=1/Math.tan(Math.PI/6),near=.1,far=220;return[f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,2*far*near/(near-far),0];}
-function mesh(points,normals){const p=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(points),gl.STATIC_DRAW);const n=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(normals),gl.STATIC_DRAW);return{p,n,count:points.length/3};}
-function parametric(rows,cols,fn){const p=[],n=[];for(let i=0;i<rows;i++){for(let j=0;j<cols;j++){const corners=[[i/rows,j/cols],[(i+1)/rows,j/cols],[(i+1)/rows,(j+1)/cols],[i/rows,(j+1)/cols]];for(const k of [0,1,2,0,2,3]){const q=fn(...corners[k]);p.push(...q[0]);n.push(...q[1]);}}}return mesh(p,n);}
-const sphere=parametric(12,20,(u,v)=>{const a=u*Math.PI,b=v*Math.PI*2,p=[Math.sin(a)*Math.cos(b),Math.cos(a),Math.sin(a)*Math.sin(b)];return[p,p];});
-const cylinder=parametric(1,12,(u,v)=>{const a=v*Math.PI*2;return[[Math.cos(a),u-.5,Math.sin(a)],[Math.cos(a),0,Math.sin(a)]];});
-function torus(radius,tube){return parametric(32,8,(u,v)=>{const a=u*Math.PI*2,b=v*Math.PI*2,c=Math.cos(b),s=Math.sin(b);return[[tube*s,(radius+tube*c)*Math.cos(a),(radius+tube*c)*Math.sin(a)],[s,c*Math.cos(a),c*Math.sin(a)]];});}
-const tire=torus(.61,.065),rim=torus(.51,.018);
-const cube=(()=>{const p=[],n=[];for(let axis=0;axis<3;axis++){for(const sign of [-1,1]){const normal=[0,0,0];normal[axis]=sign;const corners=[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]];for(const k of [0,1,2,0,2,3]){const q=[0,0,0];q[axis]=sign*.5;q[(axis+1)%3]=corners[k][0];q[(axis+2)%3]=corners[k][1];p.push(...q);n.push(...normal);}}}return mesh(p,n);})();
-const palette={ink:[.065,.23,.25],crab:[.96,.36,.25],lightCrab:[1,.51,.34],gold:[1,.76,.25],cream:[1,.97,.82],sand:[.94,.82,.58],road:[.98,.91,.72],sea:[.23,.66,.67],green:[.26,.57,.39]};
-function drawMesh(shape,m,color){gl.bindBuffer(gl.ARRAY_BUFFER,shape.p);gl.enableVertexAttribArray(loc.p);gl.vertexAttribPointer(loc.p,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,shape.n);gl.enableVertexAttribArray(loc.n);gl.vertexAttribPointer(loc.n,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(loc.m,false,new Float32Array(m));gl.uniform3fv(loc.c,color);gl.drawArrays(gl.TRIANGLES,0,shape.count);}
-function blob(root,pos,size,color,rotation=I()){drawMesh(sphere,mul(root,mul(T(...pos),mul(rotation,S(...size)))),color);}
-function box(root,pos,size,color,rotation=I()){drawMesh(cube,mul(root,mul(T(...pos),mul(rotation,S(...size)))),color);}
-function beam(root,a,b,r,color){const y=normalize(b.map((v,i)=>v-a[i])),x=normalize(cross(Math.abs(y[1])>.95?[1,0,0]:[0,1,0],y)),z=cross(x,y),length=Math.hypot(...b.map((v,i)=>v-a[i]));const m=[x[0]*r,x[1]*r,x[2]*r,0,y[0]*length,y[1]*length,y[2]*length,0,z[0]*r,z[1]*r,z[2]*r,0,(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,1];drawMesh(cylinder,mul(root,m),color);}
-let px=0,pz=0,heading=0,velocity=0,distance=0,phase=0,steer=0,orbit=.4,pitch=.37,zoom=8,elapsed=0,last=null;
-const ride=CrabPhysics.createState();
-let cameraPos=[-3,4,-8],cameraTarget=[0,1.3,0];
-const keys=new Set(),touchKeys=new Set(),buttonPointers=new Map(),cameraPointers=new Map();
-let lastPointer=[0,0],lastPinch=0,joystickPointer=null,joystickAxis=0;
-const joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
-const active=k=>keys.has(k)||touchKeys.has(k);
-const keyMap={KeyW:'forward',ArrowUp:'forward',KeyS:'back',ArrowDown:'back',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'brake',ShiftRight:'brake',KeyB:'brake'};
-function resetCamera(){orbit=.4;pitch=.37;zoom=8;}
-function reset(){Object.assign(ride,CrabPhysics.createState());release();px=0;pz=0;heading=0;velocity=0;distance=0;phase=0;steer=0;resetCamera();cameraPos=[-3,4,-8];cameraTarget=[0,1.3,0];}
-function requestJump(){CrabPhysics.jump(ride);}
-addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat){requestJump();}return;}if(e.code==='KeyR'){reset();}if(keyMap[e.code]){e.preventDefault();keys.add(keyMap[e.code]);}});
-addEventListener('keyup',e=>{if(keyMap[e.code]){keys.delete(keyMap[e.code]);}});
-function resetJoystick(){joystickPointer=null;joystickAxis=0;stick.style.transform='translate(0,0)';}
-function release(){keys.clear();touchKeys.clear();buttonPointers.clear();cameraPointers.clear();resetJoystick();document.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));}
-addEventListener('blur',release);document.addEventListener('visibilitychange',()=>{if(document.hidden){release();last=null;}});
-document.getElementById('reset').onclick=reset;document.getElementById('respawn').onclick=reset;document.getElementById('camera').onclick=resetCamera;
-for(const button of document.querySelectorAll('[data-key]')){
-  button.addEventListener('pointerdown',e=>{e.preventDefault();if(button.dataset.key==='jump'){requestJump();}button.setPointerCapture(e.pointerId);buttonPointers.set(e.pointerId,button.dataset.key);touchKeys.add(button.dataset.key);button.classList.add('held');});
-  for(const event of ['pointerup','pointercancel','lostpointercapture']){button.addEventListener(event,e=>{buttonPointers.delete(e.pointerId);if(![...buttonPointers.values()].includes(button.dataset.key)){touchKeys.delete(button.dataset.key);button.classList.remove('held');}});}
-}
-function moveJoystick(e){
-  if(e.pointerId!==joystickPointer){return;}
-  const rect=joystick.getBoundingClientRect(),radius=rect.width*.3;
-  let x=e.clientX-rect.left-rect.width/2,y=e.clientY-rect.top-rect.height/2;
-  const length=Math.hypot(x,y);if(length>radius){x*=radius/length;y*=radius/length;}
-  joystickAxis=x/radius;stick.style.transform=`translate(${x}px,${y}px)`;
-}
-joystick.addEventListener('pointerdown',e=>{if(joystickPointer!==null){return;}e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e);});
-joystick.addEventListener('pointermove',moveJoystick);
-for(const event of ['pointerup','pointercancel','lostpointercapture']){joystick.addEventListener(event,e=>{if(e.pointerId===joystickPointer){resetJoystick();}});}
-function pinchDistance(){const p=[...cameraPointers.values()];return Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);}
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus({preventScroll:true});cameraPointers.set(e.pointerId,[e.clientX,e.clientY]);lastPointer=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);if(cameraPointers.size===2){lastPinch=pinchDistance();}});
-canvas.addEventListener('pointermove',e=>{
-  if(!cameraPointers.has(e.pointerId)){return;}cameraPointers.set(e.pointerId,[e.clientX,e.clientY]);
-  if(cameraPointers.size===2){const length=pinchDistance();zoom=Math.max(4.5,Math.min(17,zoom+(lastPinch-length)*.025));lastPinch=length;}
-  else if(cameraPointers.size===1){orbit-=(e.clientX-lastPointer[0])*.007;pitch=Math.max(.12,Math.min(1.0,pitch+(e.clientY-lastPointer[1])*.005));}
-  lastPointer=[e.clientX,e.clientY];
-});
-for(const event of ['pointerup','pointercancel','lostpointercapture']){canvas.addEventListener(event,e=>{cameraPointers.delete(e.pointerId);if(cameraPointers.size===1){lastPointer=[...cameraPointers.values()][0];}});}
-canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(4.5,Math.min(17,zoom+e.deltaY*.008));},{passive:false});
-function resize(){const dpr=Math.min(devicePixelRatio||1,1.75);canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);gl.viewport(0,0,canvas.width,canvas.height);}addEventListener('resize',resize);resize();
-const base=I();
-function palm(x,z,h,seed){beam(base,[x,0,z],[x+.2,h,z],.15,[.57,.4,.24]);for(let i=0;i<6;i++){const a=i*Math.PI/3+seed;blob(base,[x+Math.sin(a)*.7,h-.05,z+Math.cos(a)*.7],[.28,.12,1.3],palette.green,mul(RY(a),RX(-.18)));}blob(base,[x+.2,h,z],[.35,.22,.35],palette.green);}
-function scenery(){
-  box(base,[px,-.3,pz],[500,.3,500],palette.sand);
-  box(base,[-256,-.09,pz],[500,.12,500],palette.sea);
-  box(base,[-6,.005,pz],[.5,.03,400],[.96,.97,.83]);
-  box(base,[0,-.045,pz],[6,.13,400],palette.road);
-  const start=Math.floor(pz/10)*10;
-  for(let i=-12;i<=17;i++){const z=start+i*10;box(base,[0,.035,z],[.11,.025,3.2],[.86,.74,.5]);}
-  const treeStart=Math.floor(pz/24);
-  for(const object of CrabPhysics.obstacles(pz)){if(object.kind==='tree'){palm(object.x,object.z,object.trunkHeight,object.seed);}}
-  for(let i=treeStart-4;i<=treeStart+6;i++){blob(base,[10,.2,i*24+8],[1.6,.6,1.8],[.56,.66,.39]);}
-  for(let i=-8;i<12;i++){const z=start+i*12;box(base,[-9+Math.sin(elapsed+i)*.25,-.006,z],[.08,.025,4.5],[.65,.87,.82]);}
-  for(const object of CrabPhysics.obstacles(pz)){if(object.kind==='wall'){const z=object.z;box(base,[13,1,z],[3,2,3],[.9,.53,.36]);box(base,[13,2.25,z],[3.5,.22,3.5],palette.cream,RZ(.08));box(base,[12.2,1.2,z-1.51],[.6,.7,.03],palette.ink);}}
-  blob(base,[-42,34,pz+105],[5,5,5],[1,.87,.45]);
-  for(let i=0;i<5;i++){const x=22*Math.sin(i*13),z=pz+60+i*15;blob(base,[x,20+i*1.3,z],[6,1.2,2.3],[.93,.98,.94]);}
-}
-function wheel(root,z,turn){const center=mul(root,mul(T(0,.65,z),RY(turn)));const spin=mul(center,RX(phase));drawMesh(tire,spin,palette.ink);drawMesh(rim,spin,palette.cream);for(let i=0;i<8;i++){const a=i*Math.PI/4;beam(spin,[0,0,0],[0,.51*Math.cos(a),.51*Math.sin(a)],.009,palette.cream);}beam(center,[-.14,0,0],[.14,0,0],.07,palette.gold);}
-function crabBike(){
-  const drowning=ride.mode!=='riding', t=ride.deathTime;
-  const bob=Math.sin(phase*2)*Math.min(Math.abs(velocity)*.006,.025);
-  const impact=CrabPhysics.impactVisual(ride);
-  const sink=drowning?-ride.waterDepth-Math.max(0,t-.28)*1.35:ride.y-ride.waterDepth+impact.lift;
-  const waterWobble=Math.max(0,ride.waterDepth-1.1)*Math.sin(elapsed*4)*.18;
-  const roll=drowning?Math.min(t*2.2,1.65):impact.roll+waterWobble+Math.sin(ride.steer*.15)*Math.min(Math.abs(velocity)/5,1);
-  const root=mul(T(px,sink+bob+1.2,pz),mul(RY(heading),mul(RZ(roll),mul(RX(drowning?0:impact.pitch-ride.vy*.012),T(0,-1.2,0)))));
-  if(!drowning&&ride.waterDepth<.01){blob(base,[px,.007,pz],[1.1/(1+ride.y*.2),.018,1.9/(1+ride.y*.2)],[.7,.65,.46]);}
-  wheel(root,-1.2,0);wheel(root,1.25,steer*.32);
-  const rear=[0,.65,-1.2],seat=[0,1.45,-.5],crank=[0,.7,-.1],fork=[0,1.4,.9],front=[0,.65,1.25];
-  for(const [a,b] of [[rear,seat],[seat,crank],[crank,rear],[seat,fork],[fork,crank],[fork,front]]){beam(root,a,b,.045,palette.gold);}
-  beam(root,seat,[0,1.58,-.55],.035,palette.ink);box(root,[0,1.58,-.55],[.4,.11,.36],palette.ink);
-  beam(root,fork,[0,1.75,1.02],.035,palette.ink);beam(root,[-.46,1.75,1.02],[.46,1.75,1.02],.04,palette.ink);
-  for(const side of [-1,1]){const a=phase+(side===1?Math.PI:0),foot=[side*.25,.7+Math.cos(a)*.23,-.1+Math.sin(a)*.23];beam(root,[0,.7,-.1],foot,.025,palette.ink);box(root,foot,[.25,.06,.13],palette.ink);const hip=[side*.3,1.8,-.5],knee=[side*.48,1.1+Math.cos(a)*.09,-.65];beam(root,hip,knee,.065,palette.crab);blob(root,knee,[.08,.08,.08],palette.crab);beam(root,knee,foot,.055,palette.lightCrab);}
-  blob(root,[0,2.05,-.48],[.79,.38,.52],palette.crab);
-  blob(root,[-.24,2.31,-.55],[.23,.06,.22],palette.lightCrab);
-  for(const side of [-1,1]){
-    for(let i=0;i<3;i++){const a=[side*.58,1.99,-.8+i*.28],b=[side*(1.05+i*.06),1.7,-.95+i*.34],c=[side*(.95+i*.05),1.4+Math.sin(phase+i)*.04,-.9+i*.37];beam(root,a,b,.05,palette.crab);beam(root,b,c,.045,palette.lightCrab);}
-    // 眼柄与朝前看的眼睛。
-    beam(root,[side*.31,2.3,-.25],[side*.35,2.61,-.17],.065,palette.crab);
-    blob(root,[side*.35,2.65,-.15],[.145,.18,.145],palette.cream);
-    if(drowning){
-      const x=side*.35;beam(root,[x-.06,2.6,-.01],[x+.06,2.72,-.01],.022,palette.ink);beam(root,[x+.06,2.6,-.01],[x-.06,2.72,-.01],.022,palette.ink);
-    }else{blob(root,[side*.35,2.66,-.025],[.07,.095,.045],palette.ink);blob(root,[side*.33,2.7,.012],[.022,.03,.015],[1,1,1]);}
-    // 两只蟹钳扶住车把。
-    const shoulder=[side*.66,2.12,-.3],elbow=[side*.99,2.02,.33],hand=[side*.45,1.83,1.0];
-    beam(root,shoulder,elbow,.085,palette.crab);beam(root,elbow,hand,.075,palette.lightCrab);
-    blob(root,hand,[.18,.15,.19],palette.crab);
-    blob(root,[hand[0]+side*.1,1.88,1.16],[.07,.12,.16],palette.lightCrab,RY(side*.3));
-    blob(root,[hand[0]-side*.08,1.82,1.16],[.065,.1,.14],palette.crab,RY(-side*.3));
-  }
-  // 一条被海风吹起的围巾，让后方视角也有识别点。
-  blob(root,[0,2,-.93],[.5,.09,.1],[.05,.44,.46]);
-  for(let i=0;i<3;i++){box(root,[.1+Math.sin(elapsed*6-i)*.08,2.05+i*.03,-1.1-i*.22],[.3,.04,.28],[.05,.44,.46],RY(Math.sin(elapsed*6-i)*.2));}
-}
-const splashRing=torus(.7,.025);
-function waterEffects(){
-  const drowning=ride.mode!=='riding';
-  if(!drowning&&!ride.wet){return;}
-  const t=drowning?ride.deathTime:elapsed,waterX=Math.min(px,-6.3);
-  for(let i=0;i<(drowning?3:2);i++){
-    const size=drowning?.4+((t+i*.33)%1.8)*1.4:.2+((t*1.4+i*.4)%1)*.7;
-    drawMesh(splashRing,mul(T(waterX,.04+i*.005,pz),mul(RZ(Math.PI/2),S(1,size,size))),palette.cream);
-  }
-  for(let i=0;i<(drowning?9:ride.waterDepth>.6?3:0);i++){
-    const age=(t+i*.19)%1.7,a=i*2.4;
-    blob(base,[waterX+Math.sin(a)*(.3+age*.15),.08+age*(drowning?1.2:.22),pz+Math.cos(a)*.5],[.05,.07,.05],[.8,.97,.93]);
-  }
-}
-function frame(now){
-  const dt=last===null?0:Math.min((now-last)/1000,.04);last=now;elapsed+=dt;
-  const turn=Math.abs(joystickAxis)>.12?-joystickAxis:Number(active('left'))-Number(active('right'));
-  const previousMode=ride.mode;
-  const wasCrashing=ride.crashTime<ride.crashDuration;
-  CrabPhysics.step(ride,{throttle:Number(active('forward'))-Number(active('back')),brake:active('brake'),turn},dt);
-  if((previousMode==='riding'&&ride.mode!=='riding')||(!wasCrashing&&ride.crashTime<ride.crashDuration)){release();}
-  px=ride.x;pz=ride.z;heading=ride.heading;velocity=ride.speed;distance=ride.distance;phase=ride.phase;steer=ride.steer;
-  const lift=(ride.mode==='riding'?ride.y*.5:0)-Math.min(ride.waterDepth,.9)*.5;
-  const angle=heading+Math.PI+orbit,target=[px,1.35+lift,pz],desired=[px+Math.sin(angle)*zoom*Math.cos(pitch),1.35+lift+Math.sin(pitch)*zoom,pz+Math.cos(angle)*zoom*Math.cos(pitch)];
-  const follow=1-Math.exp(-7*dt);for(let i=0;i<3;i++){cameraPos[i]+=(desired[i]-cameraPos[i])*follow;cameraTarget[i]+=(target[i]-cameraTarget[i])*follow;}
-  const impact=CrabPhysics.impactVisual(ride);
-  const reduceEffects=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const shake=reduceEffects?0:impact.shake;
-  const eye=cameraPos.map((v,i)=>v+Math.sin(elapsed*(80+i*13))*shake*(i===1?.7:1));
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(loc.vp,false,new Float32Array(mul(perspective(canvas.width/canvas.height),lookAt(eye,cameraTarget))));scenery();crabBike();waterEffects();
-  if(ride.crashTime<ride.crashDuration&&ride.mode==='riding'){
-    for(let i=0;i<4;i++){const a=elapsed*7+i*Math.PI/2,x=px+Math.cos(a)*.9,z=pz+Math.sin(a)*.6,y=ride.y+impact.lift+2.9+Math.sin(a*2)*.1;
-      blob(base,[x,y,z],[.06,.14,.06],palette.gold);blob(base,[x,y,z],[.13,.035,.04],palette.gold);}
-  }
-  document.getElementById('speed').textContent=String(Math.round(Math.abs(velocity)*3.6));document.getElementById('distance').textContent=String(Math.floor(distance));
-  document.getElementById('death-panel').hidden=ride.mode==='riding'||ride.deathTime<.85;
-  const crashLabel=(ride.impactStrength>.45?'高速':'')+(ride.hitKind==='tree'?'撞树':'撞墙')+'，翻车啦！ '+Math.round(ride.impactSpeed*3.6)+' km/h';
-  const waterLabel=ride.waterDepth<.5?'车轮入水了，可以倒车回岸':ride.waterDepth<1.2?'水到车架了，快回岸上！':'快淹到螃蟹了，赶紧回岸！';
-  document.getElementById('game-state').textContent=ride.mode!=='riding'?'咕噜……陷入深水了！':ride.crashTime<ride.crashDuration?crashLabel:ride.wet?waterLabel:ride.y>.08?'腾空中！':ride.hitTime>0?(ride.hitKind==='tree'?'咚！撞到树干了':'咚！撞到墙了'):'';
-  document.getElementById('tip').style.opacity=distance>2||ride.mode!=='riding'?'0':'1';
-  canvas.dataset.position=px.toFixed(2)+','+pz.toFixed(2);canvas.dataset.heading=heading.toFixed(3);canvas.dataset.orbit=orbit.toFixed(3);canvas.dataset.frame=String(Math.round(elapsed*1000));canvas.dataset.height=ride.y.toFixed(3);canvas.dataset.mode=ride.mode;canvas.dataset.impactSpeed=ride.impactSpeed.toFixed(2);canvas.dataset.crashing=String(ride.crashTime<ride.crashDuration);canvas.dataset.crashRoll=impact.roll.toFixed(3);canvas.dataset.waterDepth=ride.waterDepth.toFixed(3);
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-</script>
+  <svg class="svg-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="replay" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 1 7M3 4v6h6"/></symbol>
+    <symbol id="tiny-journal" viewBox="0 0 48 48"><rect x="11" y="7" width="29" height="35" rx="7" fill="var(--mascot-fill,#fff)"/><path d="M17 8v33M8 15h6M8 24h6M8 33h6M24 16h9"/><circle cx="25" cy="26" r="1.3" class="eye"/><circle cx="34" cy="26" r="1.3" class="eye"/><path d="M27 32q3 3 5 0"/></symbol>
+    <symbol id="tiny-crab" viewBox="0 0 48 48"><path d="m12 30-6 4m8 2-5 5m27-11 6 4m-8 2 5 5M12 26 7 19m29 7 5-7M18 23l-1-7m13 7 1-7"/><path d="M9 19C1 20 2 9 6 8l1 6 6-3c3 4 1 8-4 8ZM39 19c8 1 7-10 3-11l-1 6-6-3c-3 4-1 8 4 8Z" fill="var(--mascot-fill,#fff)"/><ellipse cx="24" cy="30" rx="14" ry="10" fill="var(--mascot-fill,#fff)"/><circle cx="17" cy="15" r="2.5" class="eye"/><circle cx="31" cy="15" r="2.5" class="eye"/><path d="M21 31q3 4 6 0"/></symbol>
+    <symbol id="tiny-camera" viewBox="0 0 48 48"><path d="m16 14 3-6h10l3 6"/><rect x="7" y="14" width="34" height="26" rx="7" fill="var(--mascot-fill,#fff)"/><circle cx="24" cy="27" r="8"/><path d="M21 28q3 3 6 0M34 20h1"/></symbol>
+    <symbol id="tiny-music" viewBox="0 0 48 48"><path d="M18 34V12l20-4v22M18 20l20-4"/><ellipse cx="12" cy="35" rx="6" ry="5" fill="var(--mascot-fill,#fff)"/><ellipse cx="32" cy="31" rx="6" ry="5" fill="var(--mascot-fill,#fff)"/></symbol>
+    <symbol id="tiny-bookmark" viewBox="0 0 48 48"><path d="M13 8h22v33L24 34l-11 7Z" fill="var(--mascot-fill,#fff)"/><circle cx="20" cy="20" r="1.3" class="eye"/><circle cx="28" cy="20" r="1.3" class="eye"/><path d="M21 26q3 3 6 0"/></symbol>
+    <symbol id="tiny-gamepad" viewBox="0 0 48 48"><path d="M14 15h20c7 0 10 22 5 24-4 2-8-7-11-7h-8c-3 0-7 9-11 7-5-2-2-24 5-24Z" fill="var(--mascot-fill,#fff)"/><path d="M12 23h10m-5-5v10M22 8q-2 7 3 7"/><circle cx="32" cy="22" r="1.5" class="eye"/><circle cx="36" cy="27" r="1.5" class="eye"/></symbol>
+    <symbol id="tiny-cup" viewBox="0 0 48 48"><path d="M34 19h3c10 0 10 13-3 13M11 19h24v13a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10Z" fill="var(--mascot-fill,#fff)"/><path d="M16 13q-4-3 0-7m9 7q-4-3 0-7M19 31q4 4 8 0"/></symbol>
+    <symbol id="tiny-bulb" viewBox="0 0 48 48"><path d="M16 30c-14-13-2-28 9-25 14 2 17 17 7 25l-2 6H18Z" fill="var(--mascot-fill,#fff)"/><path d="M18 36h12m-10 5h8M22 36l-2-13 4 3 4-3-2 13"/></symbol>
+    <symbol id="tiny-mail" viewBox="0 0 48 48"><rect x="6" y="12" width="36" height="28" rx="6" fill="var(--mascot-fill,#fff)"/><path d="m8 16 16 12 16-12M8 37l11-12m21 12L29 25M22 6l2 2 2-2"/></symbol>
+    <symbol id="tiny-clock" viewBox="0 0 48 48"><circle cx="24" cy="25" r="17" fill="var(--mascot-fill,#fff)"/><path d="M24 14v11l7 4M10 7 5 13m33-6 5 6M13 40l-3 4m25-4 3 4"/></symbol>
+    <symbol id="tiny-star" viewBox="0 0 48 48"><path d="m24 5 6 12 13 2-10 10 2 14-11-7-12 7 2-14L4 19l14-2Z" fill="var(--mascot-fill,#fff)"/><circle cx="20" cy="25" r="1.3" class="eye"/><circle cx="28" cy="25" r="1.3" class="eye"/><path d="M22 30q2 2 4 0"/></symbol>
+    <symbol id="tiny-rocket" viewBox="0 0 48 48"><path d="M19 29C19 16 30 7 40 7c0 10-9 21-22 22Z" fill="var(--mascot-fill,#fff)"/><path d="m20 20-10 1-4 9 13-1m9-1-1 10-9 4 1-13M14 34l-5 5"/><circle cx="31" cy="16" r="4"/></symbol>
+  </svg>
+
+  <section class="welcome" id="welcome" aria-labelledby="welcome-title" tabindex="-1" hidden>
+    <h1 class="sr-only" id="welcome-title">Welcome to my space</h1>
+    <div class="intro-brand" aria-hidden="true">ZhZb<span>/</span></div>
+    <div class="panel-stage" aria-hidden="true">
+      <div class="panel-rig">
+        <div class="gate-panel panel-nw"></div>
+        <div class="gate-panel panel-ne"></div>
+        <div class="gate-panel panel-se"></div>
+        <div class="gate-panel panel-sw"></div>
+      </div>
+    </div>
+    <div class="side-word word-left" aria-hidden="true"><span>Welcome<span class="welcome-dot">.</span></span></div>
+    <div class="side-word word-right" aria-hidden="true"><span>to my space.</span></div>
+    <a class="enter-button" id="enter-home" href="#home" aria-label="Enter home"><span class="button-content"><span class="button-label">Enter home</span><svg class="icon" aria-hidden="true"><use href="#arrow"/></svg></span></a>
+  </section>
+
+  <div class="home" id="home">
+    <header class="topbar shell">
+      <a class="brand" href="./#home" aria-label="ZhZb home">ZhZb<span>/</span></a>
+      <div class="header-tools">
+        <button class="orbit-toggle" id="orbit-toggle" type="button" aria-pressed="false" aria-label="Pause icon rotation" title="Pause / resume rotation" hidden><span aria-hidden="true">Ⅱ</span></button>
+        <button class="replay-button" id="replay-welcome" type="button" aria-label="Replay intro" title="Replay intro" hidden><svg class="icon" aria-hidden="true"><use href="#replay"/></svg></button>
+      </div>
+    </header>
+    <main class="home-main shell" aria-labelledby="home-title">
+      <div class="orbit-stage">
+        <div class="identity"><h1 id="home-title" tabindex="-1" aria-label="Made, found &amp; remembered"><span>Made, found</span><span>&amp; remembered</span></h1></div>
+        <nav class="orbit-track" aria-label="Explore">
+          <div class="orbit-slot" style="--angle:-90deg;--i:0"><div class="orbit-counter"><a class="app app-journal" href="./journal/" aria-label="Journal"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-journal"/></svg></span><span class="app-name">Journal</span></a></div></div>
+          <div class="orbit-slot" style="--angle:-60deg;--i:1"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="相册，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-camera"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:-30deg;--i:2"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="音乐，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-music"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:0deg;--i:3"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="收藏，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-bookmark"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:30deg;--i:4"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="游戏，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-gamepad"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:60deg;--i:5"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="生活，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-cup"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:90deg;--i:6"><div class="orbit-counter"><a class="app app-crab" href="./game.html" aria-label="Crab Coast"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-crab"/></svg></span><span class="app-name">Crab Coast</span></a></div></div>
+          <div class="orbit-slot" style="--angle:120deg;--i:7"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="灵感，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-bulb"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:150deg;--i:8"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="信箱，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-mail"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:180deg;--i:9"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="时间，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-clock"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:210deg;--i:10"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="心愿，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-star"/></svg></span><span class="app-name">开发中</span></button></div></div>
+          <div class="orbit-slot" style="--angle:240deg;--i:11"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="探索，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-rocket"/></svg></span><span class="app-name">开发中</span></button></div></div>
+        </nav>
+      </div>
+    </main>
+    <footer class="shell footer"><span>© <span id="year">2026</span> ZhZb</span><time id="today"></time></footer>
+  </div>
 </body>
 </html>

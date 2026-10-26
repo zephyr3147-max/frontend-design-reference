@@ -1,0 +1,23 @@
+# Dependencies and local output
+node_modules/
+*.log
+*.zip
+artifacts/
+
+# Credentials and browser data
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+cookies*.json
+storage-state*.json
+playwright/.auth/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
