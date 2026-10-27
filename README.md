@@ -1,6 +1,12 @@
-# ZhZb Personal Site
+# 网页前端设计参考 · ZhZb
 
-个人主页、Crab Coast 浏览器小游戏和杂记页面。使用原生 HTML / CSS / JavaScript，无需安装前端构建依赖。
+一套可直接运行的个人网站前端参考：描线开场、旋转叠片、珍珠银材质、毛玻璃交互与海报式英文排版。
+
+使用原生 **HTML / CSS / JavaScript**，无需构建依赖；支持手机和电脑，并附带 Crab Coast 浏览器小游戏与本地杂记功能。
+
+![欢迎页设计预览：银色叠片、错位英文排版与中央毛玻璃文字](docs/images/welcome-preview.jpg)
+
+[版本更新记录](CHANGELOG.md) · [本地运行](#本地预览) · [发布与回退](docs/development-and-release.md)
 
 ## 当前版本
 
