@@ -20,6 +20,20 @@
   box-shadow:0 6px 24px #8860bd12,0 0 14px #9b65ff14;
 }
 .is-entering.welcome-open .welcome { animation:none; background:transparent }
+/* Draw the two original seams, then hand their positions to the four sheets. */
+.intro-strokes { position:absolute; inset:0; z-index:5; pointer-events:none }
+.intro-strokes svg { display:block; width:100%; height:100%; overflow:visible }
+.intro-strokes line { fill:none; stroke:#34313f; stroke-width:1; vector-effect:non-scaling-stroke; transform-box:view-box }
+.welcome-open .intro-strokes { animation:strokes-handoff .15s .88s both }
+.welcome-open .stroke-horizontal { transform-origin:0 50%; animation:seam-draw-x .8s .04s cubic-bezier(.65,0,.35,1) both }
+.welcome-open .stroke-vertical { transform-origin:50% 100%; animation:seam-draw-y .8s .12s cubic-bezier(.65,0,.35,1) both }
+.intro-strokes::after { content:""; position:absolute; top:50%; left:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border:1px solid #9b65ff; border-radius:50%; box-shadow:0 0 12px #9b65ff66; opacity:0 }
+.welcome-open .intro-strokes::after { animation:seam-pulse .45s .46s ease-out both }
+.is-entering .intro-strokes { display:none }
+@keyframes seam-draw-x { from { transform:scaleX(0) } to { transform:scaleX(1) } }
+@keyframes seam-draw-y { from { transform:scaleY(0) } to { transform:scaleY(1) } }
+@keyframes seam-pulse { 0% { opacity:0; transform:scale(.5) } 25% { opacity:.7 } 100% { opacity:0; transform:scale(4.5) } }
+@keyframes strokes-handoff { from { opacity:1; visibility:visible } to { opacity:0; visibility:hidden } }
 @media(max-width:640px) {
   :root { --gate-half:84px }
   .button-content { width:220px; height:120px }
@@ -37,6 +51,7 @@
   .preview-phrase { font-size:34px }
 }
 @media(prefers-reduced-motion:reduce) {
+  .intro-strokes { display:none }
   .welcome:has(.enter-button:hover) .gate-panel,.welcome:has(.enter-button:focus-visible) .gate-panel { translate:0 0 }
   .enter-button:hover .preview-phrase,.enter-button:focus-visible .preview-phrase { transform:none }
   .welcome-open .button-label { transform:none }

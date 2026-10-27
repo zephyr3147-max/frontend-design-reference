@@ -28,8 +28,9 @@ a:focus-visible,button:focus-visible { outline:2px solid var(--violet); outline-
 .panel-ne { left:0; bottom:0; z-index:2; background:linear-gradient(215deg,#fff 72%,#f1f0f5); --x:calc(-1*var(--gate-half)); --y:calc(-1*var(--gate-half)) }
 .panel-se { left:0; top:0; z-index:3; background:linear-gradient(325deg,#f9f9fc 72%,#e9e8f0); --x:var(--gate-half); --y:calc(-1*var(--gate-half)) }
 .panel-sw { right:0; top:0; z-index:4; background:linear-gradient(40deg,#fdfdff 72%,#f0eff5); --x:var(--gate-half); --y:var(--gate-half) }
-.welcome-open .panel-rig { animation:quarter-turn 1.65s .65s var(--ease) both }
-.welcome-open .gate-panel { animation:sheet-open 1.65s .65s var(--ease) both }
+.welcome-open .panel-rig { animation:quarter-turn 1.35s .95s var(--ease) both }
+.welcome-open .gate-panel { animation:sheet-open 1.35s .95s var(--ease) both,panel-arrive .2s .8s both }
+@keyframes panel-arrive { from { opacity:0 } to { opacity:1 } }
 @keyframes quarter-turn { from { transform:rotate(0) } to { transform:rotate(-30deg) } }
 @keyframes sheet-open { 0%,12% { transform:translate(0,0) } 100% { transform:translate(var(--x),var(--y)) } }
 .side-word { position:absolute; z-index:5; line-height:1.08; opacity:0; pointer-events:none }
