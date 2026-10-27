@@ -10,8 +10,10 @@
   <link rel="preload" href="./assets/fonts/caveat.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="./home.css?v=strokes1">
   <link rel="stylesheet" href="./aperture.css?v=strokes1">
-  <link rel="stylesheet" href="./pearl.css?v=type2">
+  <link rel="stylesheet" href="./pearl.css?v=copy3">
+  <link rel="stylesheet" href="./orbit.css?v=peek1">
   <script src="./home.js?v=frost2" defer></script>
+  <script src="./orbit.js?v=peek1" defer></script>
 </head>
 <body>
   <svg class="svg-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -48,8 +50,18 @@
         </svg>
       </div>
     </div>
-    <div class="side-word word-left" aria-hidden="true"><span class="word-line">Wel</span><span class="word-line">come<span class="welcome-dot">.</span></span></div>
-    <div class="side-word word-right" aria-hidden="true"><span class="space-prefix">to my</span><span class="space-word">space<span class="welcome-dot">.</span></span></div>
+    <div class="side-word word-left" aria-hidden="true">
+      <span class="copy-stack">
+        <span class="copy-face copy-default"><span class="word-line">Wel</span><span class="word-line">come<span class="welcome-dot">.</span></span></span>
+        <span class="copy-face copy-hover"><span class="word-line">Look</span><span class="word-line">closer<span class="welcome-dot">.</span></span></span>
+      </span>
+    </div>
+    <div class="side-word word-right" aria-hidden="true">
+      <span class="copy-stack">
+        <span class="copy-face copy-default"><span class="space-prefix">to my</span><span class="space-word">space<span class="welcome-dot">.</span></span></span>
+        <span class="copy-face copy-hover"><span class="space-prefix">There’s</span><span class="space-word">more<span class="welcome-dot">.</span></span></span>
+      </span>
+    </div>
     <a class="enter-button" id="enter-home" href="#home" aria-label="Go to home"><span class="button-content" aria-hidden="true"><span class="preview-phrase"><span>Made, found</span><span>&amp; remembered</span></span><span class="button-label">Go!</span></span></a>
   </section>
 
@@ -64,6 +76,19 @@
     <main class="home-main shell" aria-labelledby="home-title">
       <div class="orbit-stage">
         <div class="identity"><h1 id="home-title" tabindex="-1" aria-label="Made, found &amp; remembered"><span>Made, found</span><span>&amp; remembered</span></h1></div>
+        <section class="orbit-preview" id="orbit-preview" aria-labelledby="preview-title" aria-hidden="true" inert>
+          <div class="preview-art" aria-hidden="true">
+            <div class="journal-art"><div class="journal-sheet sheet-back"></div><div class="journal-sheet sheet-front"><span class="journal-date">a little moment</span><span class="journal-scribble">Dear today,</span><i></i><i></i><i></i><svg class="paper-star"><use href="#tiny-star"/></svg></div></div>
+            <svg class="crab-art" viewBox="0 0 260 150" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 123h220" stroke="#c2d5e1"/><g stroke="#63829a" stroke-width="2.5"><g class="bike-wheel"><circle cx="76" cy="104" r="23"/><path d="M76 81v46m-23-23h46m-39-16 32 32m-32 0 32-32"/></g><g class="bike-wheel wheel-two"><circle cx="189" cy="104" r="23"/><path d="M189 81v46m-23-23h46m-39-16 32 32m-32 0 32-32"/></g><path d="m76 104 28-46 28 46H76l67-46h29l17 46M101 58H91m77 0-5-12h-15"/></g>
+              <g class="riding-crab" stroke="#c77171" stroke-width="2.6"><ellipse cx="126" cy="48" rx="24" ry="16" fill="#f8deda"/><path d="m105 47-12-9m54 9 12-9m-45 23-7 10 21 20m11-30 10 9-12 10M117 35l-2-10m21 10 2-10"/><circle cx="115" cy="24" r="3" fill="#c77171"/><circle cx="138" cy="24" r="3" fill="#c77171"/><path d="M121 50q5 5 10 0M93 38c-13 1-13-13-7-17l3 8 8-4c4 6 2 11-4 13Z" fill="#f8deda"/><path class="crab-claw" d="M159 38c13 1 13-13 7-17l-3 8-8-4c-4 6-2 11 4 13Z" fill="#f8deda"/></g>
+            </svg>
+            <svg class="pending-art mascot"><use id="pending-symbol" href="#tiny-camera"/></svg>
+          </div>
+          <h2 id="preview-title">Journal</h2>
+          <a id="preview-open" href="./journal/">Open Journal <span aria-hidden="true">↗</span></a>
+          <span class="preview-status" id="preview-status" hidden>开发中</span>
+        </section>
         <nav class="orbit-track" aria-label="Explore">
           <div class="orbit-slot" style="--angle:-90deg;--i:0"><div class="orbit-counter"><a class="app app-journal" href="./journal/" aria-label="Journal"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-journal"/></svg></span><span class="app-name">Journal</span></a></div></div>
           <div class="orbit-slot" style="--angle:-60deg;--i:1"><div class="orbit-counter"><button class="app app-pending" type="button" disabled aria-label="相册，开发中"><span class="app-orb"><svg class="mascot" aria-hidden="true"><use href="#tiny-camera"/></svg></span><span class="app-name">开发中</span></button></div></div>
@@ -82,5 +107,6 @@
     </main>
     <footer class="shell footer"><span>© <span id="year">2026</span> ZhZb</span><time id="today"></time></footer>
   </div>
+  <div class="page-transition" id="page-transition" aria-hidden="true" hidden><svg class="transition-mascot mascot"><use id="transition-symbol" href="#tiny-journal"/></svg></div>
 </body>
 </html>

@@ -38,6 +38,18 @@
 .welcome-open .word-line+.word-line { animation-delay:1.67s }
 .welcome-open .space-word { animation:poster-line-in .85s 1.85s var(--ease) both }
 @keyframes poster-line-in { from { clip-path:inset(0 0 100% 0); transform:translateY(16px) } to { clip-path:inset(0); transform:translateY(0) } }
+/* Two copies share a grid cell, keeping their anchors stable during the exchange. */
+.side-word>.copy-stack { display:grid }
+.copy-face { grid-area:1/1; align-self:center; display:block; transition:opacity .35s ease,filter .45s ease,translate .5s var(--ease) }
+.copy-face>.word-line,.copy-face>.space-prefix,.copy-face>.space-word { display:block; white-space:nowrap }
+.word-left .copy-hover { font-size:.78em }
+.copy-hover { opacity:0; filter:blur(7px); translate:12px 10px }
+.welcome-open .copy-hover .word-line,.welcome-open .copy-hover .space-word { animation:none; opacity:0; transform:translateY(12px); transition:opacity .4s ease,transform .5s var(--ease) }
+.welcome:has(.enter-button:hover,.enter-button:focus-visible) .copy-default { opacity:0; filter:blur(5px); translate:-12px -8px }
+.welcome:has(.enter-button:hover,.enter-button:focus-visible) .copy-hover { opacity:1; filter:blur(0); translate:0 0; transition-delay:.06s }
+.welcome:has(.enter-button:hover,.enter-button:focus-visible) .copy-hover .word-line,
+.welcome:has(.enter-button:hover,.enter-button:focus-visible) .copy-hover .space-word { opacity:1; transform:translateY(0); transition-delay:.04s }
+.welcome:has(.enter-button:hover,.enter-button:focus-visible) .copy-hover .word-line+.word-line { transition-delay:.1s }
 .is-entering .gate-panel::after { animation:none }
 @media(max-width:640px) {
   .word-left { left:7%; top:23%; font-size:clamp(60px,16vw,82px); line-height:.9 }

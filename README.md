@@ -1,6 +1,6 @@
 # 网页前端设计参考 · ZhZb
 
-一套可直接运行的个人网站前端参考：描线开场、旋转叠片、珍珠银材质、毛玻璃交互与海报式英文排版。
+一套可直接运行的个人网站前端参考：描线开场、旋转叠片、珍珠银材质、毛玻璃交互、图标内容预览与圆形铺屏转场。
 
 使用原生 **HTML / CSS / JavaScript**，无需构建依赖；支持手机和电脑，并附带 Crab Coast 浏览器小游戏与本地杂记功能。
 
@@ -10,7 +10,7 @@
 
 ## 当前版本
 
-当前代码版本：**v0.1.2 — 银色海报入口版**。完整历史和每版说明见 [版本更新记录](CHANGELOG.md)。
+当前代码版本：**v0.1.3 — 环绕探索与圆形转场版**。完整历史和每版说明见 [版本更新记录](CHANGELOG.md)。
 
 - 描线开场、珍珠银薄板，以及 Wel / come. 与 to my / space. 的错位排版。
 
@@ -19,6 +19,8 @@
 - 四块叠片逆时针旋转的欢迎页，中央方形进入按钮。
 - 手写文案 Made, found & remembered。
 - 十二个环绕图标：Journal 和 Crab Coast 可用，其余十个标注开发中。
+- 悬停 Go! 切换两侧英文；探索图标时中央显示日记纸片、螃蟹骑行等内容预览。
+- 点击入口，由图标位置展开圆形覆盖屏幕后跳转；手机首次点击预览，再次点击进入。
 - 环绕动画支持暂停、键盘操作和减少动态效果偏好。
 - 游戏支持键盘与触摸操作、跳跃、渐进入水和速度相关翻车。
 - 杂记支持本地记录、分类搜索、JSON 导入导出和主题切换。
@@ -29,6 +31,7 @@
 
 - `dist/`：发布网站文件；部署时将其中内容作为网站根目录。
 - `home-checks.cjs`：欢迎页、入场生命周期、暂停与恢复检查。
+- `orbit-checks.cjs`：图标预览、触屏操作、圆形转场与返回清理检查。
 - `checks.cjs`：游戏键盘与触摸控制检查。
 - `physics-checks.cjs`：游戏碰撞、入水、翻车与速度检查。
 - `docs/`：版本维护、发布和恢复说明。
@@ -40,12 +43,12 @@
 在仓库目录运行：
 
 ```sh
-python -m http.server 8778 --bind 127.0.0.1 --directory dist
+python -m http.server 8779 --bind 127.0.0.1 --directory dist
 ```
 
-主页：`http://127.0.0.1:8778/#home`
+主页：`http://127.0.0.1:8779/#home`
 
-重播开场：`http://127.0.0.1:8778/?welcome=1`
+重播开场：`http://127.0.0.1:8779/?welcome=1`
 
 ## 检查
 
@@ -53,8 +56,10 @@ python -m http.server 8778 --bind 127.0.0.1 --directory dist
 
 ```sh
 node --check dist/home.js
+node --check dist/orbit.js
 node --check dist/journal/app.js
 node home-checks.cjs
+node orbit-checks.cjs
 node checks.cjs
 node physics-checks.cjs
 ```
