@@ -1,0 +1,43 @@
+/* The welcome preview dissolves into Go; the homepage keeps its ink entrance. */
+:root { --gate-half:clamp(94px,9vw,124px) }
+.welcome { background:transparent }
+.button-content { position:absolute; left:50%; top:50%; display:grid; place-items:center; width:360px; height:160px; transform:translate(-50%,-50%) rotate(30deg); pointer-events:none }
+.preview-phrase { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#e9605c; font-family:Caveat,'Segoe Print',cursive; font-size:40px; font-weight:600; line-height:1.12; letter-spacing:-.025em; text-align:center; opacity:.7; filter:blur(3px); transform:scale(1); transition:opacity .5s ease,filter .6s ease,transform .6s var(--ease) }
+.preview-phrase>span { display:block; white-space:nowrap }
+.welcome-open .button-label { position:absolute; font-size:38px; animation:none; opacity:0; filter:blur(7px); transform:translateY(7px) scale(.94); transition:opacity .5s .08s ease,filter .55s .08s ease,transform .6s var(--ease); color:var(--ink) }
+.button-label::after { display:none }
+.enter-button:hover,.enter-button:focus-visible,.enter-button:active { background:transparent }
+.enter-button:focus-visible { outline:none }
+.enter-button:hover .button-content,.enter-button:focus-visible .button-content,.enter-button:active .button-content { transform:translate(-50%,-50%) rotate(30deg) }
+.enter-button:hover .preview-phrase,.enter-button:focus-visible .preview-phrase { opacity:0; filter:blur(8px); transform:scale(.96) }
+.welcome-open .enter-button:hover .button-label,.welcome-open .enter-button:focus-visible .button-label { opacity:1; filter:blur(0); transform:translateY(0) scale(1) }
+.enter-button:active .button-label { scale:.94 }
+.gate-panel { translate:0 0; transition:translate .55s var(--ease),border-color .5s,box-shadow .5s }
+.welcome:not([inert]):has(.enter-button:hover) .gate-panel,
+.welcome:not([inert]):has(.enter-button:focus-visible) .gate-panel {
+  translate:calc(var(--x)*.55) calc(var(--y)*.55);
+  border-color:#9b65ff95;
+  box-shadow:0 6px 24px #8860bd12,0 0 14px #9b65ff14;
+}
+.is-entering.welcome-open .welcome { animation:none; background:transparent }
+@media(max-width:640px) {
+  :root { --gate-half:84px }
+  .button-content { width:220px; height:120px }
+  .preview-phrase { font-size:27px; filter:blur(2.5px) }
+  .welcome-open .button-label { font-size:32px }
+}
+@media(max-width:360px) {
+  :root { --gate-half:76px }
+  .button-content { width:194px }
+  .preview-phrase { font-size:25px }
+}
+@media(max-height:600px) and (min-width:641px) {
+  :root { --gate-half:94px }
+  .button-content { width:290px; height:130px }
+  .preview-phrase { font-size:34px }
+}
+@media(prefers-reduced-motion:reduce) {
+  .welcome:has(.enter-button:hover) .gate-panel,.welcome:has(.enter-button:focus-visible) .gate-panel { translate:0 0 }
+  .enter-button:hover .preview-phrase,.enter-button:focus-visible .preview-phrase { transform:none }
+  .welcome-open .button-label { transform:none }
+}
