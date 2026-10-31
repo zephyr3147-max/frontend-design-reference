@@ -1,70 +1,41 @@
-// 运行：node checks.cjs。验证多指操控的事件状态，不依赖浏览器或第三方库。
-const fs = require('node:fs');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const source = fs.readFileSync('dist/game.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-const noop = () => {};
-const gl = new Proxy({}, { get: (_, name) => {
-  if (['getShaderParameter', 'getProgramParameter'].includes(name)) { return () => true; }
-  if (name.startsWith('create')) { return () => ({}); }
-  if (name === name.toUpperCase()) { return 1; }
-  return noop;
-} });
-function element() {
-  const classes = new Set();
-  return {
-    listeners: {}, style: {}, dataset: {}, textContent: '',
-    classList: { add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c) },
-    addEventListener(name, handler) { (this.listeners[name] ??= []).push(handler); },
-    setPointerCapture: noop, focus: noop,
-    getBoundingClientRect: () => ({ left: 16, top: 694, width: 104, height: 104 }),
-    fire(name, values = {}) { for (const handler of this.listeners[name] ?? []) { handler({ preventDefault: noop, ...values }); } }
-  };
-}
-const nodes = Object.fromEntries(['world', 'error', 'joystick', 'stick', 'reset', 'camera', 'speed', 'distance', 'tip', 'game-state', 'death-panel', 'respawn'].map(id => [id, element()]));
-nodes.world.getContext = () => gl;
-const buttons = ['brake', 'back', 'forward', 'jump'].map(key => { const button = element(); button.dataset.key = key; return button; });
-const window = element();
-const document = { ...element(), getElementById: id => nodes[id], querySelectorAll: selector => selector === '[data-key]' ? buttons : buttons.filter(b => b.classList.contains('held')) };
-let nextFrame;
-const context = vm.createContext({ console, document, CrabPhysics:require('./dist/physics.js'), innerWidth: 390, innerHeight: 844, devicePixelRatio: 1, addEventListener: window.addEventListener.bind(window), requestAnimationFrame: callback => { nextFrame = callback; } });
-vm.runInContext(source + '\nglobalThis.inspectInputs = () => ({velocity, distance, joystickAxis, zoom, buttons:touchKeys.size, pointers:cameraPointers.size, keys:keys.size});', context);
-let now = 0;
-const advance = count => { for (let i = 0; i < count; i++) { nextFrame(now); now += 1000 / 60; } };
-advance(1);
-buttons[2].fire('pointerdown', { pointerId: 1 });
-nodes.joystick.fire('pointerdown', { pointerId: 2, clientX: 98, clientY: 746 });
-advance(60);
-assert(context.inspectInputs().distance > 1, '前进按钮必须产生位移');
-assert(Math.abs(Number(nodes.world.dataset.heading)) > .1, '加速与摇杆必须可以同时生效');
-buttons[2].fire('pointerup', { pointerId: 1 });
-nodes.joystick.fire('pointercancel', { pointerId: 2 });
-assert.equal(context.inspectInputs().buttons, 0);
-assert.equal(context.inspectInputs().joystickAxis, 0);
-nodes.world.fire('pointerdown', { pointerId: 3, clientX: 100, clientY: 200 });
-nodes.world.fire('pointerdown', { pointerId: 4, clientX: 200, clientY: 200 });
-nodes.world.fire('pointermove', { pointerId: 4, clientX: 250, clientY: 200 });
-assert(context.inspectInputs().zoom < 8, '双指向外拉开必须拉近视角');
-window.fire('blur');
-assert.equal(context.inspectInputs().pointers, 0);
-buttons[2].fire('pointerdown', { pointerId: 5 });
-window.fire('keydown', { code: 'KeyA' });
-window.fire('blur');
-assert.equal(context.inspectInputs().buttons, 0, '切换页面必须松开触屏按钮');
-assert.equal(context.inspectInputs().keys, 0, '切换页面必须松开键盘');
-nodes.reset.onclick();
-assert.equal(context.inspectInputs().distance, 0);
-assert.equal(context.inspectInputs().velocity, 0);
-window.fire('keydown', { code:'Space', repeat:false });
-advance(10);
-assert(Number(nodes.world.dataset.height) > .3, '空格必须跳跃，而非刹车');
-window.fire('keydown', { code:'Space', repeat:true });
-advance(100);
-assert.equal(Number(nodes.world.dataset.height), 0, '按住空格不应自动重复跳跃');
-buttons[3].fire('pointerdown', { pointerId:6 });
-advance(10);
-assert(Number(nodes.world.dataset.height) > .3, '手机跳跃按钮必须生效');
-buttons[3].fire('pointerup', { pointerId:6 });
-nodes.respawn.onclick();
-assert.equal(context.inspectInputs().distance, 0);
-console.log('PASS: simultaneous steering + throttle, release/cancel, pinch, focus loss, keyboard/touch jump and reset');
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const noop=()=>{};
+function element(){const classes=new Set();return {listeners:{},style:{},dataset:{},textContent:'',hidden:false,children:[],classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c)},replaceChildren(){this.children=[];},append(...x){this.children.push(...x);},addEventListener(k,f){(this.listeners[k]??=[]).push(f);},setPointerCapture:noop,focus:noop,getBoundingClientRect:()=>({left:16,top:694,width:104,height:104}),fire(k,v={}){for(const f of this.listeners[k]??[])f({preventDefault:noop,...v});}};}
+const nodes=new Proxy({}, {get(o,k){return o[k]??=(element());}});
+const gl=new Proxy({}, {get(_,k){if(['getShaderParameter','getProgramParameter'].includes(k))return()=>true;if(k.startsWith('create'))return()=>({});if(k===k.toUpperCase())return 1;return noop;}});
+const map=new Proxy({}, {get:(o,k)=>o[k]??noop,set:(o,k,v)=>(o[k]=v,true)});
+nodes.world.getContext=()=>gl;nodes.map.getContext=()=>map;nodes.map.width=232;nodes.map.height=180;
+const buttons=['brake','jump','drift','forward','back'].map(key=>{const e=element();e.dataset.key=key;return e;});
+const win=element(),doc={...element(),getElementById:id=>nodes[id],createElement:()=>element(),querySelectorAll:s=>s==='[data-key]'?buttons:buttons.filter(b=>b.classList.contains('held'))};
+let next,now=0,lastInput;
+const simulation=require('./dist/race.js');
+const context=vm.createContext({console,document:doc,CoastRace:{...simulation,tick(race,input,dt){lastInput=input;return simulation.tick(race,input,dt);}},innerWidth:390,innerHeight:844,devicePixelRatio:1,addEventListener:win.addEventListener.bind(win),requestAnimationFrame:f=>next=f});
+vm.runInContext(fs.readFileSync('dist/race-renderer.js','utf8')+'\n'+fs.readFileSync('dist/race-view.js','utf8')+'\nglobalThis.inspect=()=>({race,joystickAxis,joystickThrottle,zoom,pointers:pointers.size,keys:keys.size,touch:touchKeys.size});',context);
+function advance(n){for(let i=0;i<n;i++){next(now);now+=1000/60;}}
+advance(1);assert.equal(context.inspect().race.phase,'ready');nodes.start.onclick();advance(190);assert.equal(context.inspect().race.phase,'racing');
+nodes['choose-course'].onclick();assert.equal(context.inspect().race.phase,'paused');assert.equal(nodes['course-chooser'].hidden,false);const chooserTime=context.inspect().race.time;win.fire('blur');assert.equal(context.inspect().race.phase,'paused','focus loss must not resume a paused course dialog');advance(30);assert.equal(context.inspect().race.time,chooserTime);nodes['cancel-course'].onclick();assert.equal(context.inspect().race.phase,'racing');assert.equal(nodes['course-chooser'].hidden,true);
+buttons[3].fire('pointerdown',{pointerId:1});nodes.joystick.fire('pointerdown',{pointerId:2,clientX:98,clientY:724});advance(60);
+assert(context.inspect().race.riders[0].speed>0);assert(context.inspect().race.riders[0].offset<-1.8,'touch steering and acceleration work together');
+buttons[3].fire('pointercancel',{pointerId:1});nodes.joystick.fire('lostpointercapture',{pointerId:2});assert.equal(context.inspect().touch,0);assert.equal(context.inspect().joystickAxis,0);
+win.fire('keydown',{code:'KeyJ',repeat:false});advance(10);assert(context.inspect().race.riders[0].y>.3);advance(100);assert.equal(context.inspect().race.riders[0].y,0);
+nodes.world.fire('pointerdown',{pointerId:3,clientX:100,clientY:200});nodes.world.fire('pointerdown',{pointerId:4,clientX:200,clientY:200});nodes.world.fire('pointermove',{pointerId:4,clientX:250,clientY:200});assert(context.inspect().zoom<9);
+win.fire('keydown',{code:'KeyW'});win.fire('blur');assert.equal(context.inspect().keys,0);assert.equal(context.inspect().pointers,0);assert.equal(context.inspect().race.phase,'paused');const time=context.inspect().race.time;advance(60);assert.equal(context.inspect().race.time,time);
+nodes.start.onclick();assert.equal(context.inspect().race.phase,'racing');buttons[1].fire('pointerdown',{pointerId:6});advance(10);assert(context.inspect().race.riders[0].y>.3);buttons[1].fire('pointerup',{pointerId:6});
+nodes.reset.onclick();assert.equal(context.inspect().race.phase,'ready');assert.equal(context.inspect().race.riders[0].speed,0);assert.equal(context.inspect().race.time,0);
+nodes.start.onclick();advance(190);
+nodes.joystick.fire('pointerdown',{pointerId:20,clientX:68,clientY:780});advance(30);assert.equal(context.inspect().joystickThrottle,0);assert.equal(context.inspect().race.riders[0].speed,0,'vertical wheel input must not accelerate');buttons[4].fire('pointerdown',{pointerId:21});advance(90);assert(context.inspect().race.riders[0].speed<0,'reverse button must reverse');buttons[4].fire('pointerup',{pointerId:21});
+nodes.joystick.fire('pointercancel',{pointerId:20});assert.equal(context.inspect().joystickThrottle,0);
+buttons[2].fire('pointerdown',{pointerId:22});advance(1);assert.equal(lastInput.throttle,1,'mobile drift must hold the throttle without the accelerator');assert.equal(lastInput.drift,true);
+buttons[0].fire('pointerdown',{pointerId:23});advance(1);assert.equal(lastInput.brake,true,'brake must remain available during mobile drift');buttons[0].fire('pointerup',{pointerId:23});
+buttons[4].fire('pointerdown',{pointerId:24});advance(1);assert.equal(lastInput.throttle,-1,'reverse must override automatic drift throttle');buttons[4].fire('pointerup',{pointerId:24});
+buttons[2].fire('pointerup',{pointerId:22});advance(1);assert.equal(lastInput.throttle,0,'releasing drift must release its automatic throttle');assert.equal(lastInput.drift,false);
+buttons[3].fire('pointerdown',{pointerId:25});buttons[2].fire('pointerdown',{pointerId:26});buttons[2].fire('pointercancel',{pointerId:26});advance(1);assert.equal(lastInput.throttle,1,'releasing drift must preserve a separately held accelerator');buttons[3].fire('pointerup',{pointerId:25});
+buttons[2].fire('pointerdown',{pointerId:27});buttons[2].fire('lostpointercapture',{pointerId:27});advance(1);assert.equal(lastInput.throttle,0,'cancelled drift must not leave automatic throttle stuck');
+win.fire('keydown',{code:'Space'});advance(1);assert.equal(lastInput.throttle,0,'keyboard drift must not add automatic throttle');win.fire('keyup',{code:'Space'});
+const rider=context.inspect().race.riders[0];Object.assign(rider,{speed:14,offset:0,angle:0});context.inspect().race.riders.slice(1).forEach((r,i)=>r.s=rider.s+100+i*15);
+win.fire('keydown',{code:'KeyW'});win.fire('keydown',{code:'KeyD'});win.fire('keydown',{code:'Space'});advance(25);assert(rider.drift>.5,'space with steering activates drift instead of jumping');assert.equal(rider.y,0);
+win.fire('keyup',{code:'Space'});win.fire('keyup',{code:'KeyD'});advance(80);assert(rider.drift<.01,'releasing space restores grip');
+win.fire('blur');assert.equal(context.inspect().joystickThrottle,0);
+const markup=fs.readFileSync('dist/game.html','utf8');assert(/data-key="forward"/.test(markup),'mobile accelerator must be restored');assert(/data-key="drift"/.test(markup));
+const mapLeft=vm.runInContext('mapPoint({x:10,z:0})',context),mapRight=vm.runInContext('mapPoint({x:-10,z:0})',context);assert(mapRight[0]>mapLeft[0],'map horizontal projection must match the rear-camera world axes');assert.equal(mapLeft[1],mapRight[1]);
+console.log('PASS: map orientation, renderer/control integration, direction-only wheel + separate throttle/reverse, cancellation, keyboard drift/release, keyboard/touch jump, pinch zoom, pause/resume and reset');

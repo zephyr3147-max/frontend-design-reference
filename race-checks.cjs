@@ -1,0 +1,30 @@
+const assert=require('node:assert/strict');
+const R=require('./dist/race.js');
+const advance=(race,seconds,input={throttle:1})=>{for(let t=0;t<seconds;t+=1/60)R.tick(race,input,1/60);};
+assert(R.length>400&&R.length<2000);
+for(const s of [-1,0,15,R.length,R.length*3]){
+  const a=R.sample(s),b=R.sample(s+R.length);
+  assert(Math.hypot(a.x-b.x,a.z-b.z)<.001,'closed circuit must join seamlessly');
+}
+let r=R.create();assert.equal(r.riders.length,6);assert.equal(new Set(r.riders.map(x=>x.kind)).size,6);
+R.tick(r,{throttle:1},.2);assert(r.riders.every(x=>x.speed===0),'no movement before the race starts');
+R.start(r);advance(r,2);assert.equal(r.phase,'countdown');advance(r,1.2);assert.equal(r.phase,'racing');
+assert(R.jump(r));assert(!R.jump(r),'no double jump');advance(r,1);assert.equal(r.riders[0].y,0);
+advance(r,25);assert(r.riders.every(x=>Math.abs(x.speed)<=R.MAX_SPEED+.001),'all racers obey the speed cap');
+assert(r.riders.slice(1).every(x=>x.s>100),'opponents must race around the circuit');
+assert(r.riders[0].s>100,'player must make progress');
+const p=r.riders[0];p.offset=R.RAIL+.5;p.speed=20;p.hit=0;p.angle=1.0;R.tick(r,{throttle:1},1/60);
+assert(p.speed<19&&p.speed>0,'guardrail collision slows down without freezing');assert(Math.abs(p.offset)<=R.RAIL+.001);
+assert.match(r.message,/碰撞/);const slow=p.speed;p.offset=0;p.angle=0;advance(r,.2);assert(p.speed>slow,'rider can accelerate after returning to the road');
+const contact=R.create();contact.phase='racing';contact.riders[0].s=50;contact.riders[1].s=50;
+contact.riders[0].offset=0;contact.riders[1].offset=1.0;contact.riders[0].angle=.6;contact.riders[1].speed=0;contact.riders[0].speed=18;contact.riders[1].speed=17;
+R.tick(contact,{},1/120);assert(contact.riders[0].speed<18&&contact.riders[1].speed<17,'rider contacts slow both racers');
+const dirt=R.create();dirt.phase='racing';dirt.riders[0].speed=20;dirt.riders[0].offset=9;advance(dirt,1);
+assert(dirt.riders[0].speed<15,'off-road surfaces add resistance');
+const reverse=R.create();reverse.phase='racing';advance(reverse,3,{throttle:-1});assert(reverse.riders[0].s<0,'reversing must not award laps');
+const finish=R.create();finish.phase='racing';finish.riders[0].s=R.length*R.LAPS-.1;finish.riders[0].speed=20;
+R.tick(finish,{throttle:1},.1);assert.equal(finish.phase,'finished');assert.equal(finish.riders[0].finished,true);assert.equal(R.rank(finish)[0].id,0);
+const frozen=finish.time;advance(finish,2);assert.equal(finish.time,frozen,'finish results must remain stable');
+const pause=R.create();pause.phase='paused';advance(pause,2);assert.equal(pause.time,0,'paused races must not advance');
+const steering=R.create();steering.phase='racing';steering.riders[0].speed=10;const initialOffset=steering.riders[0].offset;advance(steering,1,{throttle:1,turn:1});assert(steering.riders[0].offset<initialOffset,'right steering moves right across the road');
+console.log('PASS: closed track, six distinct racers, countdown, jump, 72 km/h cap, AI progress, guardrail/rider slowdown, recovery, off-road drag, reversing, finish order, pause and steering');
